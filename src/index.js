@@ -197,7 +197,7 @@ export default function ({Plugin, types: t}) {
                     const {messagesDir, outputFormat, outputIndentation} = getReactIntlOptions(file.opts);
                     const {basename, filename} = file.opts;
                     const jsFormat = outputFormat.toUpperCase() === 'JS';
-                    let indentation = parseInt(outputIndentation) || 2;
+                    let indentation = parseInt(outputIndentation, 10) || 2;
                     if (indentation > 10) indentation = 10;
                     if (indentation < 0) indentation = 0;
 
