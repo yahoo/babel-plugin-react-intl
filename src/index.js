@@ -151,7 +151,7 @@ export default function ({Plugin, types: t}) {
                 return `${indent}${key}: '${message}', /* ${description} */`;
             }
 
-            return `${indent}${key}: '${message},'`;
+            return `${indent}${key}: '${message}',`;
         };
 
         const generateFile = (lines) => {
@@ -196,7 +196,7 @@ export default function ({Plugin, types: t}) {
                     const {messages}  = file.get('react-intl');
                     const {messagesDir, outputFormat, outputIndentation} = getReactIntlOptions(file.opts);
                     const {basename, filename} = file.opts;
-                    const jsFormat = outputFormat.toUpperCase() === 'JS';
+                    const jsFormat = outputFormat && outputFormat.toUpperCase() === 'JS';
                     let indentation = parseInt(outputIndentation, 10) || 2;
                     if (indentation > 10) indentation = 10;
                     if (indentation < 0) indentation = 0;
