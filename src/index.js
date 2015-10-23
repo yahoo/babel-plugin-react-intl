@@ -143,6 +143,31 @@ export default function ({Plugin, types: t}) {
         return importedNames.some((name) => path.referencesImport(mod, name));
     }
 
+    function generateJavascriptFile(descriptors, indentation) {
+        const indent = Array(++indentation).join(' ');
+
+        const generateLine = (key, description, message) => {
+            if (description) {
+                return `${indent}${key}: '${message}', /* ${description} */`;
+            }
+
+            return `${indent}${key}: '${message}',`;
+        };
+
+        const generateFile = (lines) => {
+            lines.unshift('export default {');
+            lines.push('};');
+
+            return lines.join('\n');
+        };
+
+        const strings = descriptors.map(({id, description, defaultMessage}) => {
+            return generateLine(id, description, defaultMessage);
+        });
+
+        return generateFile(strings);
+    }
+
     return new Plugin('react-intl', {
         visitor: {
             Program: {
@@ -169,20 +194,27 @@ export default function ({Plugin, types: t}) {
 
                 exit(node, parent, scope, file) {
                     const {messages}  = file.get('react-intl');
-                    const {messagesDir} = getReactIntlOptions(file.opts);
+                    const {messagesDir, outputFormat, outputIndentation} = getReactIntlOptions(file.opts);
                     const {basename, filename} = file.opts;
+                    const jsFormat = outputFormat && outputFormat.toUpperCase() === 'JS';
+                    let indentation = parseInt(outputIndentation, 10) || 2;
+                    if (indentation > 10) indentation = 10;
+                    if (indentation < 0) indentation = 0;
 
                     let descriptors = [...messages.values()];
                     file.metadata['react-intl'] = {messages: descriptors};
 
                     if (messagesDir) {
+                        const extension = jsFormat ? '.js' : '.json';
                         let messagesFilename = p.join(
                             messagesDir,
                             p.dirname(p.relative(process.cwd(), filename)),
-                            basename + '.json'
+                            basename + extension
                         );
 
-                        let messagesFile = JSON.stringify(descriptors, null, 2);
+                        let messagesFile = jsFormat ?
+                          generateJavascriptFile(descriptors, indentation) :
+                          JSON.stringify(descriptors, null, indentation);
 
                         mkdirpSync(p.dirname(messagesFilename));
                         writeFileSync(messagesFilename, messagesFile);
