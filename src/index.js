@@ -159,6 +159,18 @@ export default function ({Plugin, types: t}) {
         return importedNames.some((name) => path.referencesImport(mod, name));
     }
 
+    function createJSXDisabledWarning = function (line) {
+      return `[React Intl] Line ${line}: ` +
+          'Default messages are not extracted from ' +
+          `JSX Components, use ${FUNCTION_NAMES.join(', ')} instead.`
+    }
+
+    function createFormattedPluralWarning = function (line) {
+      return `[React Intl] Line ${line}: ` +
+          'Default messages are not extracted from ' +
+          '<FormattedPlural>, use <FormattedMessage> instead.'
+    }
+
     return new Plugin('react-intl', {
         visitor: {
             Program: {
@@ -207,22 +219,26 @@ export default function ({Plugin, types: t}) {
             },
 
             JSXOpeningElement(node, parent, scope, file) {
+                const {extractJSX} = getReactIntlOptions(file.opts);
                 const moduleSourceName = getModuleSourceName(file.opts);
 
                 let name = this.get('name');
 
                 if (name.referencesImport(moduleSourceName, 'FormattedPlural')) {
-                    let {loc} = node;
-                    file.log.warn(
-                        `[React Intl] Line ${loc.start.line}: ` +
-                        'Default messages are not extracted from ' +
-                        '<FormattedPlural>, use <FormattedMessage> instead.'
-                    );
+                    const warning = extractJSX ?
+                      createFormattedPluralWarning(node.loc.start.line) :
+                      createJSXDisabledWarning(node.loc.start.line);
 
+                    file.log.warn(warning);
                     return;
                 }
 
                 if (referencesImport(name, moduleSourceName, COMPONENT_NAMES)) {
+                    if (!extractJSX) {
+                      file.log.warn(createJSXDisabledWarning(node.loc.start.line));
+                      return;
+                    }
+
                     let attributes = this.get('attributes')
                         .filter((attr) => attr.isJSXAttribute());
 

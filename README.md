@@ -40,6 +40,8 @@ The default message descriptors for the app's default language will be extracted
 
 - **`moduleSourceName`**: The ES6 module source name of the React Intl package. Defaults to: `"react-intl"`, but can be changed to another name/path to React Intl.
 
+- **`extractJSX`**: Turn off extraction of messages defined in JSX components.
+
 ### Via CLI
 
 ```sh
