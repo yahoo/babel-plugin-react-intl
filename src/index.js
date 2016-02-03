@@ -155,7 +155,7 @@ export default function () {
 
                     if (opts.messagesDir && descriptors.length > 0) {
                         let relativePath = p.relative(process.cwd(), filename);
-                        relativePath = relativePath.replace(/\.{2}\//g, '');
+                        relativePath = p.normalize(p.sep + relativePath);
                         let messagesFilename = p.join(
                             opts.messagesDir,
                             p.dirname(relativePath),
