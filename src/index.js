@@ -130,11 +130,17 @@ export default function () {
     }
 
     function referencesImport(path, mod, importedNames) {
-        if (!(path.isIdentifier() || path.isJSXIdentifier())) {
-            return false;
-        }
+        if (path.isSequenceExpression()) {
+            const sequenceExpressionValue =
+                path.node.expressions[path.node.expressions.length - 1];
 
-        return importedNames.some((name) => path.referencesImport(mod, name));
+            if (sequenceExpressionValue.property && sequenceExpressionValue.property.name) {
+                return importedNames.some((name) => name === sequenceExpressionValue.property.name);
+            }
+        } else if (path.isIdentifier() || path.isJSXIdentifier()) {
+            return importedNames.some((name) => path.referencesImport(mod, name));
+        }
+        return false;
     }
 
     return {
