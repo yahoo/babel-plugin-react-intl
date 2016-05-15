@@ -5,7 +5,7 @@
  */
 
 import * as p from 'path';
-import {writeFileSync} from 'fs';
+import {writeFileSync, readFileSync, existsSync} from 'fs';
 import {sync as mkdirpSync} from 'mkdirp';
 import printICUMessage from './print-icu-message';
 
@@ -118,9 +118,9 @@ export default function ({types: t}) {
     function storeMessage({id, description, defaultMessage}, path, state) {
         const {file, opts} = state;
 
-        if (!(id && defaultMessage)) {
+        if (!id) {
             throw path.buildCodeFrameError(
-                '[React Intl] Message Descriptors require an `id` and `defaultMessage`.'
+                '[React Intl] Message Descriptors require an `id`.'
             );
         }
 
@@ -157,7 +157,7 @@ export default function ({types: t}) {
             };
         }
 
-        messages.set(id, {id, description, defaultMessage, ...loc});
+        messages.set(id, {id, description, defaultMessage: defaultMessage || id, ...loc});
     }
 
     function referencesImport(path, mod, importedNames) {
@@ -185,30 +185,46 @@ export default function ({types: t}) {
 
         post(file) {
             const {opts} = this;
-            const {basename, filename} = file.opts;
 
             const messages = file.get(MESSAGES);
             const descriptors = [...messages.values()];
             file.metadata['react-intl'] = {messages: descriptors};
 
-            if (opts.messagesDir && descriptors.length > 0) {
-                // Make sure the relative path is "absolute" before
-                // joining it with the `messagesDir`.
-                const relativePath = p.join(
-                    p.sep,
-                    p.relative(process.cwd(), filename)
-                );
+            if (opts.messagesDir && opts.locales && opts.locales.length > 0 && descriptors.length > 0) {
+                const defaultLocale = opts.locales[0];
 
-                const messagesFilename = p.join(
-                    opts.messagesDir,
-                    p.dirname(relativePath),
-                    basename + '.json'
-                );
+                mkdirpSync(opts.messagesDir);
 
-                const messagesFile = JSON.stringify(descriptors, null, 2);
+                let messages = {};
+                for (let descriptor of descriptors) {
+                    messages[descriptor.id] = descriptor.defaultMessage;
+                }
 
-                mkdirpSync(p.dirname(messagesFilename));
-                writeFileSync(messagesFilename, messagesFile);
+                for (let locale of opts.locales) {
+                    const localeFilename = p.join(opts.messagesDir, locale + ".json");
+
+                    let localeMessages = {};
+
+                    if (existsSync(localeFilename)) {
+                        try {
+                            localeMessages = JSON.parse(readFileSync(localeFilename));
+                        } catch (e) {
+                            localeMessages = {};
+                        }
+                    }
+
+                    if (locale === defaultLocale) {
+                        localeMessages = Object.assign({}, localeMessages, messages);
+                    } else {
+                        localeMessages = Object.assign({}, messages, localeMessages);
+                    }
+                    localeMessages = Object.keys(localeMessages).sort().reduce((o, k) => {
+                        o[k] = localeMessages[k];
+                        return o;
+                    }, {});
+
+                    writeFileSync(localeFilename, JSON.stringify(localeMessages, null, 2) + "\n")
+                }
             }
         },
 
@@ -246,11 +262,10 @@ export default function ({types: t}) {
                     // In order for a default message to be extracted when
                     // declaring a JSX element, it must be done with standard
                     // `key=value` attributes. But it's completely valid to
-                    // write `<FormattedMessage {...descriptor} />` or
-                    // `<FormattedMessage id={dynamicId} />`, because it will be
-                    // skipped here and extracted elsewhere. The descriptor will
-                    // be extracted only if a `defaultMessage` prop exists.
-                    if (descriptor.defaultMessage) {
+                    // write `<FormattedMessage {...descriptor} />`, because
+                    // it will be skipped here and extracted elsewhere.
+                    // The descriptor will be extracted only if a `id` prop exists.
+                    if (descriptor.id) {
                         // Evaluate the Message Descriptor values in a JSX
                         // context, then store it.
                         descriptor = evaluateMessageDescriptor(descriptor, {
