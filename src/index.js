@@ -25,7 +25,7 @@ export default function () {
         return opts.moduleSourceName || 'react-intl';
     }
 
-    function getMessageDescriptorKey(path) {
+    function getMessageDescriptorKey(path, ignoreErrors) {
         if (path.isIdentifier() || path.isJSXIdentifier()) {
             return path.node.name;
         }
@@ -35,12 +35,16 @@ export default function () {
             return evaluated.value;
         }
 
+        if (ignoreErrors) {
+            return '';
+        }
+
         throw path.buildCodeFrameError(
             '[React Intl] Messages must be statically evaluate-able for extraction.'
         );
     }
 
-    function getMessageDescriptorValue(path) {
+    function getMessageDescriptorValue(path, ignoreErrors) {
         if (path.isJSXExpressionContainer()) {
             path = path.get('expression');
         }
@@ -50,22 +54,26 @@ export default function () {
             return evaluated.value;
         }
 
+        if (ignoreErrors) {
+            return '';
+        }
+
         throw path.buildCodeFrameError(
             '[React Intl] Messages must be statically evaluate-able for extraction.'
         );
     }
 
     function createMessageDescriptor(propPaths, options = {}) {
-        const {isJSXSource = false} = options;
+        const {isJSXSource = false, ignoreErrors = false} = options;
 
         return propPaths.reduce((hash, [keyPath, valuePath]) => {
-            let key = getMessageDescriptorKey(keyPath);
+            let key = getMessageDescriptorKey(keyPath, ignoreErrors);
 
             if (!DESCRIPTOR_PROPS.has(key)) {
                 return hash;
             }
 
-            let value = getMessageDescriptorValue(valuePath).trim();
+            let value = getMessageDescriptorValue(valuePath, ignoreErrors).trim();
 
             if (key === 'defaultMessage') {
                 try {
@@ -200,7 +208,7 @@ export default function () {
                             attr.get('name'),
                             attr.get('value'),
                         ]),
-                        {isJSXSource: true}
+                        {isJSXSource: true, ignoreErrors: opts.ignoreErrors}
                     );
 
                     // In order for a default message to be extracted when
