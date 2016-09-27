@@ -136,6 +136,12 @@ export default function ({types: t}) {
             );
         }
 
+        if (opts.lintMessageId && new RegExp(opts.lintMessageId)) {
+            throw path.buildCodeFrameError(
+                '[React Intl] Message must be in format ` + opts.lintMessageId + `.'
+            );            
+        }
+
         let loc;
         if (opts.extractSourceLocation) {
             loc = {
