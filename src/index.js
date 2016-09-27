@@ -130,16 +130,16 @@ export default function ({types: t}) {
             }
         }
 
+        if (opts.lintMessageId && (new RegExp(opts.lintMessageId)).test(id) === false) {
+            throw path.buildCodeFrameError(
+                '[React Intl] Message must be in format ` + opts.lintMessageId + `.'
+            );            
+        }
+
         if (opts.enforceDescriptions && !description) {
             throw path.buildCodeFrameError(
                 '[React Intl] Message must have a `description`.'
             );
-        }
-
-        if (opts.lintMessageId && new RegExp(opts.lintMessageId)) {
-            throw path.buildCodeFrameError(
-                '[React Intl] Message must be in format ` + opts.lintMessageId + `.'
-            );            
         }
 
         let loc;
