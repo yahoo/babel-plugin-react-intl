@@ -39,9 +39,9 @@ describe('emit asserts for: ', () => {
             assert.equal(trim(actual), trim(expected));
 
             // Check message output
-            const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
-            const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
-            assert.equal(trim(actualMessages), trim(expectedMessages));
+            const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+            const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+            assert.deepEqual(actualMessages, expectedMessages);
         });
     });
 });
@@ -57,7 +57,8 @@ describe('options', () => {
             assert(false);
         } catch (e) {
             assert(e);
-            assert(/Message must have a `description`/.test(e.message));
+            assert(/Message must have the following fields/.test(e.message));
+            assert(/description/.test(e.message));
         }
     });
 
@@ -105,9 +106,9 @@ describe('options', () => {
         }
 
         // Check message output
-        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
-        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
-        assert.equal(trim(actualMessages), trim(expectedMessages));
+        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+        assert.deepEqual(actualMessages, expectedMessages);
     });
 
     it('respects extractSourceLocation', () => {
@@ -124,9 +125,9 @@ describe('options', () => {
         }
 
         // Check message output
-        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
-        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
-        assert.equal(trim(actualMessages), trim(expectedMessages));
+        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+        assert.deepEqual(actualMessages, expectedMessages);
     });
 });
 
