@@ -21,7 +21,7 @@ const FUNCTION_NAMES = [
 const DESCRIPTOR_PROPS = {
     id: {required: true},
     description: {required:false},
-    defaultMessage: {required:true}
+    defaultMessage: {required:true},
 };
 
 const EXTRACTED_TAG = Symbol('ReactIntlExtracted');
@@ -117,7 +117,7 @@ export default function ({types: t}) {
         const {file, opts, reactIntl} = state;
 
         const missing_required = Object.keys(opts.fields)
-            .filter( key => opts.fields[key].required)
+            .filter( (key) => opts.fields[key].required)
             .reduce( (arr,key) => {
                 if(!messageDescriptor[key]){ arr.push( key ); }
                 return arr;

@@ -130,6 +130,25 @@ describe('options', () => {
         assert.deepEqual(actualMessages, expectedMessages);
     });
 
+    it('respects field config, extracts data', () => {
+        const fixtureDir = path.join(fixturesDir, 'extractFieldConfig');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                fields: { metadata: { required: true}},
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        // Check message output
+        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+        assert.deepEqual(actualMessages, expectedMessages);
+    });
+
     it('enforces field config required setting', () => {
         const fixtureDir = path.join(fixturesDir, 'extractSourceLocation');
 

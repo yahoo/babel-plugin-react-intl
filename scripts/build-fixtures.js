@@ -15,6 +15,9 @@ const fixtures = [
     ['moduleSourceName', {
         moduleSourceName: 'react-i18n',
     }],
+    ['extractFieldConfig', {
+        fields: { metadata: { required: true}}
+    }],
 ];
 
 fixtures.forEach((fixture) => {
