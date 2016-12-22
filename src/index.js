@@ -90,7 +90,7 @@ export default function ({types: t}) {
         return propPaths.reduce((hash, [keyPath, valuePath]) => {
             let key = getMessageDescriptorKey(keyPath);
 
-            if (Object.keys(fields).includes(key)) {
+            if (Object.keys(fields).indexOf(key) > -1) {
                 hash[key] = valuePath;
             }
 
