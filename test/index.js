@@ -168,8 +168,6 @@ describe('options', () => {
         const actualMessages = require(path.join(fixtureDir, 'actual.json'));
         assert.deepEqual(actualMessages, expectedMessages);
     });
-
-	//todo test extracted info
 });
 
 describe('errors', () => {
