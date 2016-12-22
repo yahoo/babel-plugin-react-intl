@@ -19,9 +19,9 @@ const FUNCTION_NAMES = [
 ];
 
 const DESCRIPTOR_PROPS = {
-	'id': { required: true},
-	'description': {required:false},
-	'defaultMessage': {required:true}
+    id: {required: true},
+    description: {required:false},
+    defaultMessage: {required:true}
 };
 
 const EXTRACTED_TAG = Symbol('ReactIntlExtracted');
@@ -113,21 +113,21 @@ export default function ({types: t}) {
     }
 
     function storeMessage(messageDescriptor, path, state) {
-		const {id, description, defaultMessage} = messageDescriptor;
+        const {id, description, defaultMessage} = messageDescriptor;
         const {file, opts, reactIntl} = state;
 
-		const missing_required = Object.keys(opts.fields)
-			.filter( key => opts.fields[key].required)
-			.reduce( (arr,key) => {
-				if(!messageDescriptor[key]){ arr.push( key ); }
-				return arr;
-			}, []);
+        const missing_required = Object.keys(opts.fields)
+            .filter( key => opts.fields[key].required)
+            .reduce( (arr,key) => {
+                if(!messageDescriptor[key]){ arr.push( key ); }
+                return arr;
+            }, []);
 
-		if(missing_required.length){
-			throw path.buildCodeFrameError(
-				'[React Intl] Message must have the following fields:' + missing_required.join(', ')
-			);
-		}
+        if(missing_required.length){
+            throw path.buildCodeFrameError(
+                '[React Intl] Message must have the following fields:' + missing_required.join(', ')
+            );
+        }
 
         if (reactIntl.messages.has(id)) {
             let existing = reactIntl.messages.get(id);
@@ -173,10 +173,10 @@ export default function ({types: t}) {
         visitor: {
             Program: {
                 enter(path, state) {
-					state.opts.fields = state.opts.fields || {};
-					const fields = state.opts.fields;
-					Object.assign(fields,DESCRIPTOR_PROPS);
-					fields.description.required = !!state.opts.enforceDescriptions;
+                    state.opts.fields = state.opts.fields || {};
+                    const fields = state.opts.fields;
+                    Object.assign(fields,DESCRIPTOR_PROPS);
+                    fields.description.required = !!state.opts.enforceDescriptions;
                     state.reactIntl = {
                         messages: new Map(),
                     };
@@ -239,7 +239,7 @@ export default function ({types: t}) {
                             attr.get('name'),
                             attr.get('value'),
                         ]),
-						opts.fields
+                        opts.fields
                     );
 
                     // In order for a default message to be extracted when
@@ -302,7 +302,7 @@ export default function ({types: t}) {
                             prop.get('key'),
                             prop.get('value'),
                         ]),
-						state.opts.fields
+                        state.opts.fields
                     );
 
                     // Evaluate the Message Descriptor values, then store it.

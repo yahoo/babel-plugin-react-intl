@@ -129,6 +129,28 @@ describe('options', () => {
         const actualMessages = require(path.join(fixtureDir, 'actual.json'));
         assert.deepEqual(actualMessages, expectedMessages);
     });
+
+    it('enforces field config required setting', () => {
+        const fixtureDir = path.join(fixturesDir, 'extractSourceLocation');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                fields: { metadata: { required: true}},
+            });
+            assert(false);
+        } catch (e) {
+            assert(e);
+            assert(/Message must have the following fields/.test(e.message));
+            assert(/metadata/.test(e.message));
+        }
+
+        // Check message output
+        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+        assert.deepEqual(actualMessages, expectedMessages);
+    });
+
+	//todo test extracted info
 });
 
 describe('errors', () => {
