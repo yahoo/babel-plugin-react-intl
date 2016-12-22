@@ -16,6 +16,7 @@ const skipTests = [
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
+    'extractFieldConfig',
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
