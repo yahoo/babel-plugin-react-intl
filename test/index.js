@@ -162,11 +162,6 @@ describe('options', () => {
             assert(/Message must have the following fields/.test(e.message));
             assert(/metadata/.test(e.message));
         }
-
-        // Check message output
-        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
-        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
-        assert.deepEqual(actualMessages, expectedMessages);
     });
 });
 
