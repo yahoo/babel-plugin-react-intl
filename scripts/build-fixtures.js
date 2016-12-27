@@ -15,7 +15,7 @@ const fixtures = [
     ['moduleSourceName', {
         moduleSourceName: 'react-i18n',
     }],
-	'descriptionsAsObjects'
+    'descriptionsAsObjects'
 ];
 
 fixtures.forEach((fixture) => {

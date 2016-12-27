@@ -52,11 +52,11 @@ export default function ({types: t}) {
         }
 
         // Always trim the Message Descriptor values.
-		let descriptorValue = evaluatePath(path);
+        let descriptorValue = evaluatePath(path);
 
-		if( typeof descriptorValue === 'string' ){
-			descriptorValue = descriptorValue.trim();
-		}
+        if( typeof descriptorValue === 'string' ){
+            descriptorValue = descriptorValue.trim();
+        }
         return descriptorValue;
     }
 
