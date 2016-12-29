@@ -7,6 +7,7 @@ const baseDir = p.resolve(`${__dirname}/../test/fixtures`);
 
 const fixtures = [
     'defineMessages',
+    'descriptionsAsObjects',
     ['extractSourceLocation', {
         extractSourceLocation: true,
     }],
@@ -15,7 +16,6 @@ const fixtures = [
     ['moduleSourceName', {
         moduleSourceName: 'react-i18n',
     }],
-    'descriptionsAsObjects'
 ];
 
 fixtures.forEach((fixture) => {
