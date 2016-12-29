@@ -42,6 +42,8 @@ If a message descriptor has a `description`, it'll be removed from the source af
 
 - **`moduleSourceName`**: The ES6 module source name of the React Intl package. Defaults to: `"react-intl"`, but can be changed to another name/path to React Intl.
 
+- **`lintMessageId`**: A RegExp to lint the format of the id, can be used keep all ids same.
+
 ### Via CLI
 
 ```sh
