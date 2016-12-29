@@ -16,6 +16,7 @@ const skipTests = [
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
+    'extractFieldConfig',
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -39,9 +40,9 @@ describe('emit asserts for: ', () => {
             assert.equal(trim(actual), trim(expected));
 
             // Check message output
-            const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
-            const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
-            assert.equal(trim(actualMessages), trim(expectedMessages));
+            const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+            const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+            assert.deepEqual(actualMessages, expectedMessages);
         });
     });
 });
@@ -57,7 +58,8 @@ describe('options', () => {
             assert(false);
         } catch (e) {
             assert(e);
-            assert(/Message must have a `description`/.test(e.message));
+            assert(/Message must have the following fields/.test(e.message));
+            assert(/description/.test(e.message));
         }
     });
 
@@ -105,9 +107,9 @@ describe('options', () => {
         }
 
         // Check message output
-        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
-        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
-        assert.equal(trim(actualMessages), trim(expectedMessages));
+        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+        assert.deepEqual(actualMessages, expectedMessages);
     });
 
     it('respects extractSourceLocation', () => {
@@ -124,9 +126,43 @@ describe('options', () => {
         }
 
         // Check message output
-        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
-        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
-        assert.equal(trim(actualMessages), trim(expectedMessages));
+        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+        assert.deepEqual(actualMessages, expectedMessages);
+    });
+
+    it('respects field config, extracts data', () => {
+        const fixtureDir = path.join(fixturesDir, 'extractFieldConfig');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                fields: { metadata: { required: true}},
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        // Check message output
+        const expectedMessages = require(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = require(path.join(fixtureDir, 'actual.json'));
+        assert.deepEqual(actualMessages, expectedMessages);
+    });
+
+    it('enforces field config required setting', () => {
+        const fixtureDir = path.join(fixturesDir, 'extractSourceLocation');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                fields: { metadata: { required: true}},
+            });
+            assert(false);
+        } catch (e) {
+            assert(e);
+            assert(/Message must have the following fields/.test(e.message));
+            assert(/metadata/.test(e.message));
+        }
     });
 });
 

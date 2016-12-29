@@ -42,6 +42,8 @@ If a message descriptor has a `description`, it'll be removed from the source af
 
 - **`moduleSourceName`**: The ES6 module source name of the React Intl package. Defaults to: `"react-intl"`, but can be changed to another name/path to React Intl.
 
+- **`fields`**: For specifying additional metadata fields and whether they're required. Takes an object with field names as key names, which specify whether they're required. `fields: { metadata: { required: true }, otherdata: {required: false} }`
+
 ### Via CLI
 
 ```sh

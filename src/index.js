@@ -18,7 +18,11 @@ const FUNCTION_NAMES = [
     'defineMessages',
 ];
 
-const DESCRIPTOR_PROPS = new Set(['id', 'description', 'defaultMessage']);
+const DESCRIPTOR_PROPS = {
+    id: {required: true},
+    description: {required:false},
+    defaultMessage: {required:true},
+};
 
 const EXTRACTED_TAG = Symbol('ReactIntlExtracted');
 
@@ -87,11 +91,11 @@ export default function ({types: t}) {
         }
     }
 
-    function createMessageDescriptor(propPaths) {
+    function createMessageDescriptor(propPaths, fields) {
         return propPaths.reduce((hash, [keyPath, valuePath]) => {
             let key = getMessageDescriptorKey(keyPath);
 
-            if (DESCRIPTOR_PROPS.has(key)) {
+            if (Object.keys(fields).indexOf(key) > -1) {
                 hash[key] = valuePath;
             }
 
@@ -113,12 +117,20 @@ export default function ({types: t}) {
         return descriptor;
     }
 
-    function storeMessage({id, description, defaultMessage}, path, state) {
+    function storeMessage(messageDescriptor, path, state) {
+        const {id, description, defaultMessage} = messageDescriptor;
         const {file, opts, reactIntl} = state;
 
-        if (!(id && defaultMessage)) {
+        const missing_required = Object.keys(opts.fields)
+            .filter( (key) => opts.fields[key].required)
+            .reduce( (arr,key) => {
+                if(!messageDescriptor[key]){ arr.push( key ); }
+                return arr;
+            }, []);
+
+        if(missing_required.length){
             throw path.buildCodeFrameError(
-                '[React Intl] Message Descriptors require an `id` and `defaultMessage`.'
+                '[React Intl] Message must have the following fields:' + missing_required.join(', ')
             );
         }
 
@@ -135,12 +147,6 @@ export default function ({types: t}) {
             }
         }
 
-        if (opts.enforceDescriptions && !description) {
-            throw path.buildCodeFrameError(
-                '[React Intl] Message must have a `description`.'
-            );
-        }
-
         let loc;
         if (opts.extractSourceLocation) {
             loc = {
@@ -149,7 +155,7 @@ export default function ({types: t}) {
             };
         }
 
-        reactIntl.messages.set(id, {id, description, defaultMessage, ...loc});
+        reactIntl.messages.set(id, {...messageDescriptor, ...loc});
     }
 
     function referencesImport(path, mod, importedNames) {
@@ -172,6 +178,10 @@ export default function ({types: t}) {
         visitor: {
             Program: {
                 enter(path, state) {
+                    state.opts.fields = state.opts.fields || {};
+                    const fields = state.opts.fields;
+                    Object.assign(fields,DESCRIPTOR_PROPS);
+                    fields.description.required = !!state.opts.enforceDescriptions;
                     state.reactIntl = {
                         messages: new Map(),
                     };
@@ -233,7 +243,8 @@ export default function ({types: t}) {
                         attributes.map((attr) => [
                             attr.get('name'),
                             attr.get('value'),
-                        ])
+                        ]),
+                        opts.fields
                     );
 
                     // In order for a default message to be extracted when
@@ -295,7 +306,8 @@ export default function ({types: t}) {
                         properties.map((prop) => [
                             prop.get('key'),
                             prop.get('value'),
-                        ])
+                        ]),
+                        state.opts.fields
                     );
 
                     // Evaluate the Message Descriptor values, then store it.
