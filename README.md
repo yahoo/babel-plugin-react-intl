@@ -45,7 +45,7 @@ If a message descriptor has a `description`, it'll be removed from the source af
 ### Via CLI
 
 ```sh
-$ babel --plugins react-intl script.js
+$ babel-cli --plugins react-intl script.js
 ```
 
 ### Via Node API
