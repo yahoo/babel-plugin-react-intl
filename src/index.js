@@ -333,6 +333,9 @@ export default function ({types: t}) {
                     messagesObj.get('properties')
                         .map((prop) => prop.get('value'))
                         .forEach(processMessageObject);
+
+                    // Remove `defineMessages` and just set assignment to object literal
+                    path.replaceWith(path.get('arguments')[0]);
                 }
             },
         },
