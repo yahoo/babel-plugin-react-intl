@@ -307,21 +307,6 @@ export default function ({types: t}) {
                     // Evaluate the Message Descriptor values, then store it.
                     descriptor = evaluateMessageDescriptor(descriptor);
                     storeMessage(descriptor, messageObj, state);
-
-                    // Remove description since it's not used at runtime.
-                    messageObj.replaceWith(t.objectExpression([
-                        t.objectProperty(
-                            t.stringLiteral('id'),
-                            t.stringLiteral(descriptor.id)
-                        ),
-                        t.objectProperty(
-                            t.stringLiteral('defaultMessage'),
-                            t.stringLiteral(descriptor.defaultMessage)
-                        ),
-                    ]));
-
-                    // Tag the AST node so we don't try to extract it twice.
-                    tagAsExtracted(messageObj);
                 }
 
                 if (referencesImport(callee, moduleSourceName, FUNCTION_NAMES)) {
