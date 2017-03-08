@@ -16,6 +16,7 @@ const skipTests = [
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
+    'removeDefaultMessages'
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -89,6 +90,30 @@ describe('options', () => {
             console.error(e);
             assert(false);
         }
+    });
+
+    it('removes defaultMessages when removeDefaultMessages=true', () => {
+        const fixtureDir = path.join(fixturesDir, 'removeDefaultMessages');
+
+        let actual;
+        try {
+            actual = transform(path.join(fixtureDir, 'actual.js'), {
+                removeDefaultMessages: true,
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        // Check code output
+        const expected = fs.readFileSync(path.join(fixtureDir, 'expected.js'));
+        assert.equal(trim(actual), trim(expected));
+
+        // Check message output
+        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
+        assert.equal(trim(actualMessages), trim(expectedMessages));
     });
 
     it('respects moduleSourceName', () => {

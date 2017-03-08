@@ -16,6 +16,9 @@ const fixtures = [
     ['moduleSourceName', {
         moduleSourceName: 'react-i18n',
     }],
+    ['removeDefaultMessages', {
+        removeDefaultMessages: true,
+    }],
 ];
 
 fixtures.forEach((fixture) => {

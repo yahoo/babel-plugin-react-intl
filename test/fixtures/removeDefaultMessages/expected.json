@@ -1,0 +1,10 @@
+[
+  {
+    "id": "greeting-user",
+    "defaultMessage": "Hello, {name}"
+  },
+  {
+    "id": "greeting-world",
+    "defaultMessage": "Hello World!"
+  }
+]

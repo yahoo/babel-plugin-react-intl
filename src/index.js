@@ -260,11 +260,13 @@ export default function ({types: t}) {
                         storeMessage(descriptor, path, state);
 
                         // Remove description since it's not used at runtime.
-                        attributes.some((attr) => {
-                            const ketPath = attr.get('name');
-                            if (getMessageDescriptorKey(ketPath) === 'description') {
+                        // Remove defaultMessage if option is set to true.
+                        attributes.forEach((attr) => {
+                            const keyPath = attr.get('name');
+                            const key = getMessageDescriptorKey(keyPath);
+
+                            if (key === 'description' || (opts.removeDefaultMessages && key === 'defaultMessage')) {
                                 attr.remove();
-                                return true;
                             }
                         });
 
@@ -315,10 +317,13 @@ export default function ({types: t}) {
                             t.stringLiteral('id'),
                             t.stringLiteral(descriptor.id)
                         ),
-                        t.objectProperty(
-                            t.stringLiteral('defaultMessage'),
-                            t.stringLiteral(descriptor.defaultMessage)
-                        ),
+                        // Remove defaultMessage if option is set to true.
+                        ...(!state.opts.removeDefaultMessages && [
+                            t.objectProperty(
+                                t.stringLiteral('defaultMessage'),
+                                t.stringLiteral(descriptor.defaultMessage)
+                            ),
+                        ]),
                     ]));
 
                     // Tag the AST node so we don't try to extract it twice.
