@@ -16,6 +16,7 @@ const skipTests = [
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
+    'additionalDescriptorProps',
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -116,6 +117,25 @@ describe('options', () => {
         try {
             transform(path.join(fixtureDir, 'actual.js'), {
                 extractSourceLocation: true,
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        // Check message output
+        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
+        assert.equal(trim(actualMessages), trim(expectedMessages));
+    });
+
+    it('respects additionalDescriptorProps', () => {
+        const fixtureDir = path.join(fixturesDir, 'additionalDescriptorProps');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                additionalDescriptorProps: ['meta'],
             });
             assert(true);
         } catch (e) {

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "foo.bar.bar",
+    "defaultMessage": "Hello Everybody!",
+    "meta": {
+      "html": true
+    }
+  },
+  {
+    "id": "foo.bar.baz",
+    "defaultMessage": "Hello World!",
+    "meta": {
+      "html": true
+    }
+  }
+]

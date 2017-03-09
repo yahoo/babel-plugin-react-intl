@@ -28,6 +28,14 @@ export default function ({types: t}) {
         return opts.moduleSourceName || 'react-intl';
     }
 
+    function getDescriptorProps(opts) {
+        if (opts.additionalDescriptorProps) {
+            return new Set([ ...DESCRIPTOR_PROPS, ...opts.additionalDescriptorProps ]);
+        }
+
+        return DESCRIPTOR_PROPS;
+    }
+
     function evaluatePath(path) {
         const evaluated = path.evaluate();
         if (evaluated.confident) {
@@ -89,11 +97,11 @@ export default function ({types: t}) {
         }
     }
 
-    function createMessageDescriptor(propPaths) {
+    function createMessageDescriptor(descriptorProps, propPaths) {
         return propPaths.reduce((hash, [keyPath, valuePath]) => {
             const key = getMessageDescriptorKey(keyPath);
 
-            if (DESCRIPTOR_PROPS.has(key)) {
+            if (descriptorProps.has(key)) {
                 hash[key] = valuePath;
             }
 
@@ -115,7 +123,7 @@ export default function ({types: t}) {
         return descriptor;
     }
 
-    function storeMessage({id, description, defaultMessage}, path, state) {
+    function storeMessage({id, description, defaultMessage, ...others}, path, state) {
         const {file, opts} = state;
 
         if (!(id && defaultMessage)) {
@@ -157,7 +165,14 @@ export default function ({types: t}) {
             };
         }
 
-        messages.set(id, {id, description, defaultMessage, ...loc});
+        let additional = {};
+        if (opts.additionalDescriptorProps) {
+            opts.additionalDescriptorProps.map((name) => {
+                additional[name] = others[name];
+            });
+        }
+
+        messages.set(id, {id, description, defaultMessage, ...additional, ...loc});
     }
 
     function referencesImport(path, mod, importedNames) {
@@ -220,6 +235,7 @@ export default function ({types: t}) {
 
                 const {file, opts} = state;
                 const moduleSourceName = getModuleSourceName(opts);
+                const descriptorProps = getDescriptorProps(opts);
                 const name = path.get('name');
 
                 if (name.referencesImport(moduleSourceName, 'FormattedPlural')) {
@@ -236,7 +252,7 @@ export default function ({types: t}) {
                     const attributes = path.get('attributes')
                         .filter((attr) => attr.isJSXAttribute());
 
-                    let descriptor = createMessageDescriptor(
+                    let descriptor = createMessageDescriptor(descriptorProps,
                         attributes.map((attr) => [
                             attr.get('name'),
                             attr.get('value'),
@@ -276,6 +292,7 @@ export default function ({types: t}) {
 
             CallExpression(path, state) {
                 const moduleSourceName = getModuleSourceName(state.opts);
+                const descriptorProps = getDescriptorProps(state.opts);
                 const callee = path.get('callee');
 
                 function assertObjectExpression(node) {
@@ -298,7 +315,7 @@ export default function ({types: t}) {
 
                     const properties = messageObj.get('properties');
 
-                    let descriptor = createMessageDescriptor(
+                    let descriptor = createMessageDescriptor(descriptorProps,
                         properties.map((prop) => [
                             prop.get('key'),
                             prop.get('value'),
