@@ -8,6 +8,7 @@ import * as p from 'path';
 import {writeFileSync} from 'fs';
 import {sync as mkdirpSync} from 'mkdirp';
 import printICUMessage from './print-icu-message';
+import objectValues from 'object.values';
 
 const COMPONENT_NAMES = [
     'FormattedMessage',
@@ -191,7 +192,7 @@ export default function ({types: t}) {
     }
 
     function findRequireBinding(scope, moduleName) {
-        return Object.values(scope.bindings).find((binding) => {
+        return objectValues(scope.bindings).find((binding) => {
             if(!binding.constant) {
                 return false;
             }
@@ -348,12 +349,12 @@ export default function ({types: t}) {
 
                 requireBinding.referencePaths.forEach((referencePath) => {
                     if(referencePath.parent.type === 'MemberExpression'
-                        && FUNCTION_NAMES.includes(referencePath.parent.property.name)
+                        && FUNCTION_NAMES.indexOf(referencePath.parent.property.name) !== -1
                         && referencePath.parentPath.parent.type === 'CallExpression'
                     ) {
                         processCallExpression(referencePath.parentPath.parentPath, state);
                     } else if(referencePath.parent.type === 'JSXMemberExpression'
-                        && COMPONENT_NAMES.includes(referencePath.parent.property.name)
+                        && COMPONENT_NAMES.indexOf(referencePath.parent.property.name) !== -1
                         && referencePath.parentPath.parent.type === 'JSXOpeningElement'
                     ) {
                         processJsxOpeningElement(referencePath.parentPath.parentPath, state);
