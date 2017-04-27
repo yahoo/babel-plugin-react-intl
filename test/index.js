@@ -25,23 +25,27 @@ describe('emit asserts for: ', () => {
     fs.readdirSync(fixturesDir).map((caseName) => {
         if (skipTests.indexOf(caseName) >= 0) return;
 
-        it(`output match: ${caseName}`, () => {
-            const fixtureDir = path.join(fixturesDir, caseName);
+        const fixtureCategoryDir = path.join(fixturesDir, caseName);
 
-            // Ensure messages are deleted
-            const actualMessagesPath = path.join(fixtureDir, 'actual.json');
-            if (fs.existsSync(actualMessagesPath)) fs.unlinkSync(actualMessagesPath);
+        fs.readdirSync(fixtureCategoryDir).forEach((moduleType) => {
+            const fixtureDir = path.join(fixtureCategoryDir, moduleType);
 
-            const actual = transform(path.join(fixtureDir, 'actual.js'));
+            it(`output match: ${caseName} (${moduleType})`, () => {
+                // Ensure messages are deleted
+                const actualMessagesPath = path.join(fixtureDir, 'actual.json');
+                if (fs.existsSync(actualMessagesPath)) fs.unlinkSync(actualMessagesPath);
 
-            // Check code output
-            const expected = fs.readFileSync(path.join(fixtureDir, 'expected.js'));
-            assert.equal(trim(actual), trim(expected));
+                const actual = transform(path.join(fixtureDir, 'actual.js'));
 
-            // Check message output
-            const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
-            const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
-            assert.equal(trim(actualMessages), trim(expectedMessages));
+                // Check code output
+                const expected = fs.readFileSync(path.join(fixtureDir, 'expected.js'));
+                assert.equal(trim(actual), trim(expected));
+
+                // Check message output
+                const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
+                const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
+                assert.equal(trim(actualMessages), trim(expectedMessages));
+            });
         });
     });
 });
