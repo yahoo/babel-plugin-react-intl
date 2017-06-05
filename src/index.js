@@ -234,15 +234,33 @@ export default function ({types: t}) {
 
                 if (referencesImport(name, moduleSourceName, COMPONENT_NAMES)) {
                     const attributes = path.get('attributes')
-                        .filter((attr) => attr.isJSXAttribute());
-
+                        .filter((attr) => attr.isJSXAttribute() || attr.isJSXSpreadAttribute());
                     let descriptor = createMessageDescriptor(
-                        attributes.map((attr) => [
-                            attr.get('name'),
-                            attr.get('value'),
-                        ])
+                        attributes.reduce((memo, attr) => {
+                            let arrayToAdd;
+                            if (attr.isJSXSpreadAttribute()) {
+                                const argument = attr.get('argument');
+                                if (!argument.isObjectExpression()) {
+                                    return memo;
+                                }
+                                const properties = argument.get('properties');
+                                arrayToAdd = properties
+                                    // Ignore spread properties, cause they are hard to evaluate
+                                    // and usually are used for passing defined message into FormattedMessage
+                                    .filter((prop) => !prop.isSpreadProperty())
+                                    .map((prop) => [
+                                        prop.get('key'),
+                                        prop.get('value'),
+                                    ]);
+                            } else {
+                                arrayToAdd = [[
+                                    attr.get('name'),
+                                    attr.get('value'),
+                                ]];
+                            }
+                            return memo.concat(arrayToAdd);
+                        }, [])
                     );
-
                     // In order for a default message to be extracted when
                     // declaring a JSX element, it must be done with standard
                     // `key=value` attributes. But it's completely valid to
@@ -261,8 +279,14 @@ export default function ({types: t}) {
 
                         // Remove description since it's not used at runtime.
                         attributes.some((attr) => {
-                            const ketPath = attr.get('name');
-                            if (getMessageDescriptorKey(ketPath) === 'description') {
+                            if (attr.isJSXSpreadAttribute()) {
+                                return attr.get('argument').get('properties').some((prop) => {
+                                    if (getMessageDescriptorKey(prop.get('key')) === 'description') {
+                                        prop.remove();
+                                        return true;
+                                    }
+                                });
+                            } else if (getMessageDescriptorKey(attr.get('name')) === 'description') {
                                 attr.remove();
                                 return true;
                             }
