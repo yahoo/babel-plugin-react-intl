@@ -284,7 +284,7 @@ export default function ({types: t}) {
         }
 
         for (let child of el.childNodes()) {
-            if (child.type() === "element") {
+            if (child.type() === 'element') {
                 copyAddChildElement(doc, child, newEl);
             } else {
                 newEl.addChild(child);
@@ -350,7 +350,7 @@ export default function ({types: t}) {
         newDoc.root(rootNode);
 
         let appendFileNodes = [];
-        for (let existingFileNode of existingDoc.find(`//xliff:file`, {xliff: XLIFF12_NAMESPACE})) {
+        for (let existingFileNode of existingDoc.find('//xliff:file', {xliff: XLIFF12_NAMESPACE})) {
             const original = existingFileNode.attr('original').value();
 
             if (original < relativeFileName) {
@@ -451,19 +451,18 @@ export default function ({types: t}) {
 
         post(file) {
             const {opts} = this;
-            const {filename: fileName} = file.opts;
 
             const messages = file.get(MESSAGES);
             const descriptors = [...messages.values()];
 
-            descriptors.sort(function (a, b) {
+            descriptors.sort((a, b) => {
                 if (a.id < b.id) {
                     return -1;
                 } else if (a.id > b.id) {
                     return 1;
-                } else {
-                    return 0;
                 }
+
+                return 0;
             });
 
             file.metadata['react-intl'] = {messages: descriptors};
