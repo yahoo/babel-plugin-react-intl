@@ -267,6 +267,25 @@ export default function ({types: t}) {
         }
     }
 
+    function copyAddChildElement(doc, el, parent) {
+        const newEl = new Element(doc, el.name());
+        parent.addChild(newEl);
+        newEl.namespace(el.namespace());
+
+        for (let attr of el.attrs()) {
+            newEl.attr({[attr.name()]: attr.value()});
+            // FIXME: libxmljs does not handle attribute namespaces
+        }
+
+        for (let child of el.childNodes()) {
+            if (child.type() === "element") {
+                copyAddChildElement(doc, child, newEl);
+            } else {
+                newEl.addChild(child);
+            }
+        }
+    }
+
     function generateXLIFF12(file, opts, descriptors) {
         const relativeFileName = p.relative(process.cwd(), file.opts.filename);
 
@@ -302,6 +321,7 @@ export default function ({types: t}) {
             } else {
                 existingDoc = new Document('1.0', 'utf-8');
                 const rootNode = new Element(existingDoc, 'xliff');
+                rootNode.defineNamespace(XLIFF12_NAMESPACE);
                 rootNode.namespace(XLIFF12_NAMESPACE);
                 rootNode.attr({
                     'version': '1.2',
@@ -311,6 +331,7 @@ export default function ({types: t}) {
 
             const newDoc = new Document('1.0', 'utf-8');
             const rootNode = new Element(newDoc, 'xliff');
+            rootNode.defineNamespace(XLIFF12_NAMESPACE);
             rootNode.namespace(XLIFF12_NAMESPACE);
             rootNode.attr({
                 'version': '1.2',
@@ -321,37 +342,44 @@ export default function ({types: t}) {
             for (let existingFileNode of existingDoc.find(`//xliff:file`, {xliff: XLIFF12_NAMESPACE})) {
                 const original = existingFileNode.attr('original').value();
 
-                if (original < relativeFileName) {
-                    rootNode.addChild(existingFileNode);
-                } else if (original > relativeFileName) {
-                    appendFileNodes.push(existingFileNode);
-                }
+                    if (original < relativeFileName) {
+                        copyAddChildElement(newDoc, existingFileNode, rootNode);
+
+                    } else if (original > relativeFileName) {
+                        appendFileNodes.push(existingFileNode);
+                    }
             }
 
             const fileNode = new Element(newDoc, 'file');
+            rootNode.addChild(fileNode);
+            fileNode.namespace(XLIFF12_NAMESPACE);
             fileNode.attr({
                 'original': relativeFileName,
                 'datatype': 'plaintext',
                 'source-language': 'en',
                 'target-language': locale,
             });
-            rootNode.addChild(fileNode);
 
             const bodyNode = new Element(newDoc, 'body');
             fileNode.addChild(bodyNode);
+            bodyNode.namespace(XLIFF12_NAMESPACE);
 
             for (let descriptor of descriptors) {
                 const transUnitNode = new Element(newDoc, 'trans-unit');
+                bodyNode.addChild(transUnitNode);
+                transUnitNode.namespace(XLIFF12_NAMESPACE);
                 transUnitNode.attr({
                     id: descriptor.id,
                 });
-                bodyNode.addChild(transUnitNode);
 
                 const sourceNode = new Element(newDoc, 'source');
-                sourceNode.text(descriptor.id);
                 transUnitNode.addChild(sourceNode);
+                sourceNode.namespace(XLIFF12_NAMESPACE);
+                sourceNode.text(descriptor.id);
 
                 const targetNode = new Element(newDoc, 'target');
+                transUnitNode.addChild(targetNode);
+                targetNode.namespace(XLIFF12_NAMESPACE);
 
                 const existingTargetNode = existingDoc.get(
                     `//xliff:file[@original = '${relativeFileName}']/xliff:body/xliff:trans-unit[xliff:source[text() = '${descriptor.id}']]/xliff:target`,
@@ -365,17 +393,17 @@ export default function ({types: t}) {
                 } else {
                     targetNode.text(descriptor.defaultMessage);
                 }
-                transUnitNode.addChild(targetNode);
 
                 if (descriptor.description) {
                     const noteNode = new Element(newDoc, 'note');
-                    noteNode.text(descriptor.description);
                     transUnitNode.addChild(noteNode);
+                    noteNode.namespace(XLIFF12_NAMESPACE);
+                    noteNode.text(descriptor.description);
                 }
             }
 
             for (let existingFileNode of appendFileNodes) {
-                rootNode.addChild(existingFileNode);
+                copyAddChildElement(newDoc, existingFileNode, rootNode);
             }
 
             const newContents = newDoc.toString(true).trim() + '\n';
