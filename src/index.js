@@ -4,9 +4,11 @@
  * See the accompanying LICENSE file for terms.
  */
 
-import * as p from 'path';
-import {writeFileSync, readFileSync, existsSync} from 'fs';
+import {createHash} from 'crypto';
+import {existsSync, readFileSync, writeFileSync} from 'fs';
+import {Document, Element, parseXml} from 'libxmljs';
 import {sync as mkdirpSync} from 'mkdirp';
+import * as p from 'path';
 import printICUMessage from './print-icu-message';
 
 const COMPONENT_NAMES = [
@@ -21,7 +23,13 @@ const FUNCTION_NAMES = [
 const DESCRIPTOR_PROPS = new Set(['id', 'description', 'defaultMessage']);
 
 const EXTRACTED = Symbol('ReactIntlExtracted');
-const MESSAGES  = Symbol('ReactIntlMessages');
+const MESSAGES = Symbol('ReactIntlMessages');
+
+const XLIFF12_NAMESPACE = 'urn:oasis:names:tc:xliff:document:1.2';
+
+const FORMAT_JSON_MULTI_FILE = 'json-multi-file';
+const FORMAT_JSON_SINGLE_FILE = 'json-single-file';
+const FORMAT_XLIFF12 = 'xliff-1.2';
 
 export default function ({types: t}) {
     function getModuleSourceName(opts) {
@@ -120,8 +128,16 @@ export default function ({types: t}) {
 
         if (!id) {
             throw path.buildCodeFrameError(
-                '[React Intl] Message Descriptors require an `id`.'
+                '[React Intl] Message descriptors require an `id`.'
             );
+        }
+
+        if (opts.enforceDefaultMessage === undefined || opts.enforceDefaultMessage === true) {
+            if (!defaultMessage) {
+                throw path.buildCodeFrameError(
+                    '[React Intl] Message descriptors require an `defaultMessage`.'
+                );
+            }
         }
 
         const messages = file.get(MESSAGES);
@@ -129,8 +145,7 @@ export default function ({types: t}) {
             const existing = messages.get(id);
 
             if (description !== existing.description ||
-                defaultMessage !== existing.defaultMessage) {
-
+                (defaultMessage || id) !== existing.defaultMessage) {
                 throw path.buildCodeFrameError(
                     `[React Intl] Duplicate message id: "${id}", ` +
                     'but the `description` and/or `defaultMessage` are different.'
@@ -176,6 +191,216 @@ export default function ({types: t}) {
         return !!path.node[EXTRACTED];
     }
 
+    let existsCache = {};
+    let contentsCache = {};
+
+    function generateJSONMultiFile(file, opts, descriptors) {
+        const {filename, basename} = file.opts;
+
+        // Make sure the relative path is "absolute" before
+        // joining it with the `messagesDir`.
+        const relativePath = p.join(p.sep, p.relative(process.cwd(), filename));
+
+        const messagesFilename = p.join(
+            opts.messagesDir,
+            p.dirname(relativePath),
+            basename + '.json'
+        );
+
+        const messagesFile = JSON.stringify(descriptors, null, 2);
+
+        mkdirpSync(p.dirname(messagesFilename));
+        writeFileSync(messagesFilename, messagesFile);
+    }
+
+    function generateJSONSingleFile(file, opts, descriptors) {
+        let messages = {};
+
+        for (let descriptor of descriptors) {
+            messages[descriptor.id] = descriptor.defaultMessage;
+        }
+
+        for (let locale of (opts.locales || [])) {
+            const localeFileName = p.join(opts.messagesDir, locale + '.json');
+
+            let localeMessages = {};
+            let existingContentsHash = null;
+
+            if (existsCache[localeFileName] === undefined) {
+                existsCache[localeFileName] = existsSync(localeFileName);
+            }
+
+            if (existsCache[localeFileName]) {
+                if (contentsCache[localeFileName] === undefined) {
+                    contentsCache[localeFileName] = {
+                        contents: readFileSync(localeFileName),
+                    };
+                    contentsCache[localeFileName].md5 = createHash('md5')
+                        .update(contentsCache[localeFileName].contents)
+                        .digest('hex');
+                }
+
+                localeMessages = JSON.parse(contentsCache[localeFileName].contents);
+                existingContentsHash = contentsCache[localeFileName].md5;
+            }
+
+            localeMessages = Object.assign({}, messages, localeMessages);
+            localeMessages = Object.keys(localeMessages).sort().reduce((o, k) => {
+                o[k] = localeMessages[k];
+                return o;
+            }, {});
+
+            const newContents = JSON.stringify(localeMessages, null, 2) + '\n';
+            const newContentsHash = createHash('md5').update(newContents).digest('hex');
+
+            if (newContentsHash !== existingContentsHash) {
+                if (!existsCache[localeFileName]) {
+                    mkdirpSync(opts.messagesDir);
+                }
+                writeFileSync(localeFileName, newContents);
+                existsCache[localeFileName] = true;
+                contentsCache[localeFileName] = {
+                    contents: newContents,
+                    md5: newContentsHash,
+                };
+            }
+        }
+    }
+
+    function generateXLIFF12(file, opts, descriptors) {
+        const relativeFileName = p.relative(process.cwd(), file.opts.filename);
+
+        for (let locale of (opts.locales || [])) {
+            const localeFileName = p.join(opts.messagesDir, locale + '.xliff');
+
+            if (existsCache[localeFileName] === undefined) {
+                existsCache[localeFileName] = existsSync(localeFileName);
+            }
+
+            let existingDoc;
+            let existingContentsHash = null;
+
+            if (existsCache[localeFileName]) {
+                if (contentsCache[localeFileName] === undefined) {
+                    contentsCache[localeFileName] = {
+                        contents: readFileSync(localeFileName),
+                    };
+                    contentsCache[localeFileName].md5 = createHash('md5')
+                        .update(contentsCache[localeFileName].contents)
+                        .digest('hex');
+                }
+
+                existingContentsHash = contentsCache[localeFileName].md5;
+                existingDoc = parseXml(contentsCache[localeFileName].contents);
+
+                const versionAttribute = existingDoc.root().attr('version');
+
+                if (!versionAttribute || versionAttribute.value() !== '1.2') {
+                    throw `[React Intl] File ${localeFileName} is not XLIFF 1.2 file.`;
+                }
+
+            } else {
+                existingDoc = new Document('1.0', 'utf-8');
+                const rootNode = new Element(existingDoc, 'xliff');
+                rootNode.namespace(XLIFF12_NAMESPACE);
+                rootNode.attr({
+                    'version': '1.2',
+                });
+                existingDoc.root(rootNode);
+            }
+
+            const newDoc = new Document('1.0', 'utf-8');
+            const rootNode = new Element(newDoc, 'xliff');
+            rootNode.namespace(XLIFF12_NAMESPACE);
+            rootNode.attr({
+                'version': '1.2',
+            });
+            newDoc.root(rootNode);
+
+            let appendFileNodes = [];
+            for (let existingFileNode of existingDoc.find(`//xliff:file`, {xliff: XLIFF12_NAMESPACE})) {
+                const original = existingFileNode.attr('original').value();
+
+                if (original < relativeFileName) {
+                    rootNode.addChild(existingFileNode);
+                } else if (original > relativeFileName) {
+                    appendFileNodes.push(existingFileNode);
+                }
+            }
+
+            const fileNode = new Element(newDoc, 'file');
+            fileNode.attr({
+                'original': relativeFileName,
+                'datatype': 'plaintext',
+                'source-language': 'en',
+                'target-language': locale,
+            });
+            rootNode.addChild(fileNode);
+
+            const bodyNode = new Element(newDoc, 'body');
+            fileNode.addChild(bodyNode);
+
+            for (let descriptor of descriptors) {
+                const transUnitNode = new Element(newDoc, 'trans-unit');
+                transUnitNode.attr({
+                    id: descriptor.id,
+                });
+                bodyNode.addChild(transUnitNode);
+
+                const sourceNode = new Element(newDoc, 'source');
+                sourceNode.text(descriptor.id);
+                transUnitNode.addChild(sourceNode);
+
+                const targetNode = new Element(newDoc, 'target');
+
+                const existingTargetNode = existingDoc.get(
+                    `//xliff:file[@original = '${relativeFileName}']/xliff:body/xliff:trans-unit[xliff:source[text() = '${descriptor.id}']]/xliff:target`,
+                    {
+                        xliff: XLIFF12_NAMESPACE,
+                    }
+                );
+
+                if (existingTargetNode) {
+                    targetNode.text(existingTargetNode.text().trim());
+                } else {
+                    targetNode.text(descriptor.defaultMessage);
+                }
+                transUnitNode.addChild(targetNode);
+
+                if (descriptor.description) {
+                    const noteNode = new Element(newDoc, 'note');
+                    noteNode.text(descriptor.description);
+                    transUnitNode.addChild(noteNode);
+                }
+            }
+
+            for (let existingFileNode of appendFileNodes) {
+                rootNode.addChild(existingFileNode);
+            }
+
+            const newContents = newDoc.toString(true).trim() + '\n';
+            const newContentsHash = createHash('md5').update(newContents).digest('hex');
+
+            if (newContentsHash !== existingContentsHash) {
+                if (!existsCache[localeFileName]) {
+                    mkdirpSync(opts.messagesDir);
+                }
+                writeFileSync(localeFileName, newContents);
+                existsCache[localeFileName] = true;
+                contentsCache[localeFileName] = {
+                    contents: newContents,
+                    md5: newContentsHash,
+                };
+            }
+        }
+    }
+
+    const generators = {
+        [FORMAT_JSON_MULTI_FILE]: generateJSONMultiFile,
+        [FORMAT_JSON_SINGLE_FILE]: generateJSONSingleFile,
+        [FORMAT_XLIFF12]: generateXLIFF12,
+    };
+
     return {
         pre(file) {
             if (!file.has(MESSAGES)) {
@@ -185,46 +410,31 @@ export default function ({types: t}) {
 
         post(file) {
             const {opts} = this;
+            const {filename: fileName} = file.opts;
 
             const messages = file.get(MESSAGES);
             const descriptors = [...messages.values()];
+
+            descriptors.sort(function (a, b) {
+                if (a.id < b.id) {
+                    return -1;
+                } else if (a.id > b.id) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+
             file.metadata['react-intl'] = {messages: descriptors};
 
-            if (opts.messagesDir && opts.locales && opts.locales.length > 0 && descriptors.length > 0) {
-                const defaultLocale = opts.locales[0];
+            if (opts.messagesDir && descriptors.length > 0) {
+                const generate = generators[opts.format || FORMAT_JSON_MULTI_FILE];
 
-                mkdirpSync(opts.messagesDir);
-
-                let messages = {};
-                for (let descriptor of descriptors) {
-                    messages[descriptor.id] = descriptor.defaultMessage;
+                if (!generate) {
+                    throw `[React Intl] Unknown format ${opts.format}.`;
                 }
 
-                for (let locale of opts.locales) {
-                    const localeFilename = p.join(opts.messagesDir, locale + ".json");
-
-                    let localeMessages = {};
-
-                    if (existsSync(localeFilename)) {
-                        try {
-                            localeMessages = JSON.parse(readFileSync(localeFilename));
-                        } catch (e) {
-                            localeMessages = {};
-                        }
-                    }
-
-                    if (locale === defaultLocale) {
-                        localeMessages = Object.assign({}, localeMessages, messages);
-                    } else {
-                        localeMessages = Object.assign({}, messages, localeMessages);
-                    }
-                    localeMessages = Object.keys(localeMessages).sort().reduce((o, k) => {
-                        o[k] = localeMessages[k];
-                        return o;
-                    }, {});
-
-                    writeFileSync(localeFilename, JSON.stringify(localeMessages, null, 2) + "\n")
-                }
+                generate(file, opts, descriptors);
             }
         },
 
@@ -332,7 +542,7 @@ export default function ({types: t}) {
                         ),
                         t.objectProperty(
                             t.stringLiteral('defaultMessage'),
-                            t.stringLiteral(descriptor.defaultMessage)
+                            t.stringLiteral(descriptor.defaultMessage || descriptor.id)
                         ),
                     ]));
 

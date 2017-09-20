@@ -34,7 +34,16 @@ If a message descriptor has a `description`, it'll be removed from the source af
 
 #### Options
 
-- **`messagesDir`**: The target location where the plugin will output a `.json` file corresponding to each component from which React Intl messages were extracted. If not provided, the extracted message descriptors will only be accessible via Babel's API.
+- **`format`**:
+  - **`json-multi-file`** (default): will output a `.json` file corresponding to each component from which React Intl messages were extracted.
+  - **`json-single-file`**: will output single `{locale}.json` file with all message ID-default message pairs for each of `locales`.
+  - **`xliff-1.2`**: will output single `{locale}.xliff` file with all messages from all files for each of `locales`.
+
+- **`locales`**: Array of strings for `json-single-file` & `xliff` formats.
+
+- **`messagesDir`**: The target location where the plugin will output data. If not provided, the extracted message descriptors will only be accessible via Babel's API.
+
+- **`enforceDefaultMessage`**: Whether message declarations _must_ contain a `defaultMessage`. Defaults to: `true`.
 
 - **`enforceDescriptions`**: Whether message declarations _must_ contain a `description` to provide context to translators. Defaults to: `false`.
 
