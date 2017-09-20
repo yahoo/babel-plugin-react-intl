@@ -36,12 +36,16 @@ If a message descriptor has a `description`, it'll be removed from the source af
 
 - **`format`**:
   - **`json-multi-file`** (default): will output a `.json` file corresponding to each component from which React Intl messages were extracted.
-  - **`json-single-file`**: will output single `{locale}.json` file with all message ID-default message pairs for each of `locales`.
-  - **`xliff-1.2`**: will output single `{locale}.xliff` file with all messages from all files for each of `locales`.
+  - **`json-single-file`**: will output single JSON file with all message ID-default message pairs.
+  - **`xliff-1.2`**: will output single [XLIFF 1.2](http://docs.oasis-open.org/xliff/v1.2/os/xliff-core.html) file with each component in corresponding `<file>` element and each message in `<trans-unit>` element.
 
-- **`locales`**: Array of strings for `json-single-file` & `xliff` formats.
+- **`messagesDir`**: The target location where the plugin will output data for `json-multi-file` format. If not provided, the extracted message descriptors will only be accessible via Babel's API.
 
-- **`messagesDir`**: The target location where the plugin will output data. If not provided, the extracted message descriptors will only be accessible via Babel's API.
+- **`messagesFile`**: The target location where the plugin will output data for `json-single-file` & `xliff-1.2` formats.
+
+- **`xliffSourceLanguage`**: Source language for `xliff-1.2` format.
+
+- **`xliffTargetLanguage`**: Target language for `xliff-1.2` format.
 
 - **`enforceDefaultMessage`**: Whether message declarations _must_ contain a `defaultMessage`. Defaults to: `true`.
 

@@ -195,6 +195,10 @@ export default function ({types: t}) {
     let contentsCache = {};
 
     function generateJSONMultiFile(file, opts, descriptors) {
+        if (!opts.messagesDir) {
+            return;
+        }
+
         const {filename, basename} = file.opts;
 
         // Make sure the relative path is "absolute" before
@@ -214,56 +218,58 @@ export default function ({types: t}) {
     }
 
     function generateJSONSingleFile(file, opts, descriptors) {
+        if (!opts.messagesFile) {
+            return;
+        }
+
         let messages = {};
 
         for (let descriptor of descriptors) {
             messages[descriptor.id] = descriptor.defaultMessage;
         }
 
-        for (let locale of (opts.locales || [])) {
-            const localeFileName = p.join(opts.messagesDir, locale + '.json');
+        const localeFileName = opts.messagesFile;
 
-            let localeMessages = {};
-            let existingContentsHash = null;
+        let localeMessages = {};
+        let existingContentsHash = null;
 
-            if (existsCache[localeFileName] === undefined) {
-                existsCache[localeFileName] = existsSync(localeFileName);
-            }
+        if (existsCache[localeFileName] === undefined) {
+            existsCache[localeFileName] = existsSync(localeFileName);
+        }
 
-            if (existsCache[localeFileName]) {
-                if (contentsCache[localeFileName] === undefined) {
-                    contentsCache[localeFileName] = {
-                        contents: readFileSync(localeFileName),
-                    };
-                    contentsCache[localeFileName].md5 = createHash('md5')
-                        .update(contentsCache[localeFileName].contents)
-                        .digest('hex');
-                }
-
-                localeMessages = JSON.parse(contentsCache[localeFileName].contents);
-                existingContentsHash = contentsCache[localeFileName].md5;
-            }
-
-            localeMessages = Object.assign({}, messages, localeMessages);
-            localeMessages = Object.keys(localeMessages).sort().reduce((o, k) => {
-                o[k] = localeMessages[k];
-                return o;
-            }, {});
-
-            const newContents = JSON.stringify(localeMessages, null, 2) + '\n';
-            const newContentsHash = createHash('md5').update(newContents).digest('hex');
-
-            if (newContentsHash !== existingContentsHash) {
-                if (!existsCache[localeFileName]) {
-                    mkdirpSync(opts.messagesDir);
-                }
-                writeFileSync(localeFileName, newContents);
-                existsCache[localeFileName] = true;
+        if (existsCache[localeFileName]) {
+            if (contentsCache[localeFileName] === undefined) {
                 contentsCache[localeFileName] = {
-                    contents: newContents,
-                    md5: newContentsHash,
+                    contents: readFileSync(localeFileName),
                 };
+                contentsCache[localeFileName].md5 = createHash('md5')
+                    .update(contentsCache[localeFileName].contents)
+                    .digest('hex');
             }
+
+            localeMessages = JSON.parse(contentsCache[localeFileName].contents);
+            existingContentsHash = contentsCache[localeFileName].md5;
+        }
+
+        localeMessages = Object.assign({}, messages, localeMessages);
+        localeMessages = Object.keys(localeMessages).sort().reduce((o, k) => {
+            o[k] = localeMessages[k];
+            return o;
+        }, {});
+
+        const newContents = JSON.stringify(localeMessages, null, 2) + '\n';
+        const newContentsHash = createHash('md5').update(newContents).digest('hex');
+
+        if (newContentsHash !== existingContentsHash) {
+            if (!existsCache[localeFileName]) {
+                mkdirpSync(opts.messagesDir);
+            }
+            writeFileSync(localeFileName, newContents);
+            existsCache[localeFileName] = true;
+            contentsCache[localeFileName] = {
+                contents: newContents,
+                md5: newContentsHash,
+            };
         }
     }
 
@@ -284,142 +290,149 @@ export default function ({types: t}) {
                 newEl.addChild(child);
             }
         }
+
+        return newEl;
     }
 
     function generateXLIFF12(file, opts, descriptors) {
+        if (!opts.messagesFile) {
+            return;
+        }
+
         const relativeFileName = p.relative(process.cwd(), file.opts.filename);
 
-        for (let locale of (opts.locales || [])) {
-            const localeFileName = p.join(opts.messagesDir, locale + '.xliff');
+        const localeFileName = opts.messagesFile;
 
-            if (existsCache[localeFileName] === undefined) {
-                existsCache[localeFileName] = existsSync(localeFileName);
+        if (existsCache[localeFileName] === undefined) {
+            existsCache[localeFileName] = existsSync(localeFileName);
+        }
+
+        let existingDoc;
+        let existingContentsHash = null;
+
+        if (existsCache[localeFileName]) {
+            if (contentsCache[localeFileName] === undefined) {
+                contentsCache[localeFileName] = {
+                    contents: readFileSync(localeFileName),
+                };
+                contentsCache[localeFileName].md5 = createHash('md5')
+                    .update(contentsCache[localeFileName].contents)
+                    .digest('hex');
             }
 
-            let existingDoc;
-            let existingContentsHash = null;
+            existingContentsHash = contentsCache[localeFileName].md5;
+            existingDoc = parseXml(contentsCache[localeFileName].contents);
 
-            if (existsCache[localeFileName]) {
-                if (contentsCache[localeFileName] === undefined) {
-                    contentsCache[localeFileName] = {
-                        contents: readFileSync(localeFileName),
-                    };
-                    contentsCache[localeFileName].md5 = createHash('md5')
-                        .update(contentsCache[localeFileName].contents)
-                        .digest('hex');
-                }
+            const versionAttribute = existingDoc.root().attr('version');
 
-                existingContentsHash = contentsCache[localeFileName].md5;
-                existingDoc = parseXml(contentsCache[localeFileName].contents);
-
-                const versionAttribute = existingDoc.root().attr('version');
-
-                if (!versionAttribute || versionAttribute.value() !== '1.2') {
-                    throw `[React Intl] File ${localeFileName} is not XLIFF 1.2 file.`;
-                }
-
-            } else {
-                existingDoc = new Document('1.0', 'utf-8');
-                const rootNode = new Element(existingDoc, 'xliff');
-                rootNode.defineNamespace(XLIFF12_NAMESPACE);
-                rootNode.namespace(XLIFF12_NAMESPACE);
-                rootNode.attr({
-                    'version': '1.2',
-                });
-                existingDoc.root(rootNode);
+            if (!versionAttribute || versionAttribute.value() !== '1.2') {
+                throw `[React Intl] File ${localeFileName} is not XLIFF 1.2 file.`;
             }
 
-            const newDoc = new Document('1.0', 'utf-8');
-            const rootNode = new Element(newDoc, 'xliff');
+        } else {
+            existingDoc = new Document('1.0', 'utf-8');
+            const rootNode = new Element(existingDoc, 'xliff');
             rootNode.defineNamespace(XLIFF12_NAMESPACE);
             rootNode.namespace(XLIFF12_NAMESPACE);
             rootNode.attr({
                 'version': '1.2',
             });
-            newDoc.root(rootNode);
+            existingDoc.root(rootNode);
+        }
 
-            let appendFileNodes = [];
-            for (let existingFileNode of existingDoc.find(`//xliff:file`, {xliff: XLIFF12_NAMESPACE})) {
-                const original = existingFileNode.attr('original').value();
+        const newDoc = new Document('1.0', 'utf-8');
+        const rootNode = new Element(newDoc, 'xliff');
+        rootNode.defineNamespace(XLIFF12_NAMESPACE);
+        rootNode.namespace(XLIFF12_NAMESPACE);
+        rootNode.attr({
+            'version': '1.2',
+        });
+        newDoc.root(rootNode);
 
-                    if (original < relativeFileName) {
-                        copyAddChildElement(newDoc, existingFileNode, rootNode);
+        let appendFileNodes = [];
+        for (let existingFileNode of existingDoc.find(`//xliff:file`, {xliff: XLIFF12_NAMESPACE})) {
+            const original = existingFileNode.attr('original').value();
 
-                    } else if (original > relativeFileName) {
-                        appendFileNodes.push(existingFileNode);
-                    }
+            if (original < relativeFileName) {
+                copyAddChildElement(newDoc, existingFileNode, rootNode);
+
+            } else if (original > relativeFileName) {
+                appendFileNodes.push(existingFileNode);
             }
+        }
 
-            const fileNode = new Element(newDoc, 'file');
-            rootNode.addChild(fileNode);
-            fileNode.namespace(XLIFF12_NAMESPACE);
-            fileNode.attr({
-                'original': relativeFileName,
-                'datatype': 'plaintext',
-                'source-language': 'en',
-                'target-language': locale,
+        const fileNode = new Element(newDoc, 'file');
+        rootNode.addChild(fileNode);
+        fileNode.namespace(XLIFF12_NAMESPACE);
+        fileNode.attr({
+            'original': relativeFileName,
+            'datatype': 'plaintext',
+            'source-language': opts.xliffSourceLanguage,
+            'target-language': opts.xliffTargetLanguage,
+        });
+
+        const bodyNode = new Element(newDoc, 'body');
+        fileNode.addChild(bodyNode);
+        bodyNode.namespace(XLIFF12_NAMESPACE);
+
+        for (let descriptor of descriptors) {
+            const transUnitNode = new Element(newDoc, 'trans-unit');
+            bodyNode.addChild(transUnitNode);
+            transUnitNode.namespace(XLIFF12_NAMESPACE);
+            transUnitNode.attr({
+                id: descriptor.id,
             });
 
-            const bodyNode = new Element(newDoc, 'body');
-            fileNode.addChild(bodyNode);
-            bodyNode.namespace(XLIFF12_NAMESPACE);
+            const sourceNode = new Element(newDoc, 'source');
+            transUnitNode.addChild(sourceNode);
+            sourceNode.namespace(XLIFF12_NAMESPACE);
+            sourceNode.text(descriptor.id);
 
-            for (let descriptor of descriptors) {
-                const transUnitNode = new Element(newDoc, 'trans-unit');
-                bodyNode.addChild(transUnitNode);
-                transUnitNode.namespace(XLIFF12_NAMESPACE);
-                transUnitNode.attr({
-                    id: descriptor.id,
-                });
+            const targetNode = new Element(newDoc, 'target');
+            transUnitNode.addChild(targetNode);
+            targetNode.namespace(XLIFF12_NAMESPACE);
 
-                const sourceNode = new Element(newDoc, 'source');
-                transUnitNode.addChild(sourceNode);
-                sourceNode.namespace(XLIFF12_NAMESPACE);
-                sourceNode.text(descriptor.id);
-
-                const targetNode = new Element(newDoc, 'target');
-                transUnitNode.addChild(targetNode);
-                targetNode.namespace(XLIFF12_NAMESPACE);
-
-                const existingTargetNode = existingDoc.get(
-                    `//xliff:file[@original = '${relativeFileName}']/xliff:body/xliff:trans-unit[xliff:source[text() = '${descriptor.id}']]/xliff:target`,
-                    {
-                        xliff: XLIFF12_NAMESPACE,
-                    }
-                );
-
-                if (existingTargetNode) {
-                    targetNode.text(existingTargetNode.text().trim());
-                } else {
-                    targetNode.text(descriptor.defaultMessage);
+            const existingTargetNode = existingDoc.get(
+                `//xliff:file[@original = '${relativeFileName}']
+                    /xliff:body
+                    /xliff:trans-unit[xliff:source[text() = '${descriptor.id}']]
+                    /xliff:target`,
+                {
+                    xliff: XLIFF12_NAMESPACE,
                 }
+            );
 
-                if (descriptor.description) {
-                    const noteNode = new Element(newDoc, 'note');
-                    transUnitNode.addChild(noteNode);
-                    noteNode.namespace(XLIFF12_NAMESPACE);
-                    noteNode.text(descriptor.description);
-                }
+            if (existingTargetNode) {
+                targetNode.text(existingTargetNode.text().trim());
+            } else {
+                targetNode.text(descriptor.defaultMessage);
             }
 
-            for (let existingFileNode of appendFileNodes) {
-                copyAddChildElement(newDoc, existingFileNode, rootNode);
+            if (descriptor.description) {
+                const noteNode = new Element(newDoc, 'note');
+                transUnitNode.addChild(noteNode);
+                noteNode.namespace(XLIFF12_NAMESPACE);
+                noteNode.text(descriptor.description);
             }
+        }
 
-            const newContents = newDoc.toString(true).trim() + '\n';
-            const newContentsHash = createHash('md5').update(newContents).digest('hex');
+        for (let existingFileNode of appendFileNodes) {
+            copyAddChildElement(newDoc, existingFileNode, rootNode);
+        }
 
-            if (newContentsHash !== existingContentsHash) {
-                if (!existsCache[localeFileName]) {
-                    mkdirpSync(opts.messagesDir);
-                }
-                writeFileSync(localeFileName, newContents);
-                existsCache[localeFileName] = true;
-                contentsCache[localeFileName] = {
-                    contents: newContents,
-                    md5: newContentsHash,
-                };
+        const newContents = newDoc.toString(true).trim() + '\n';
+        const newContentsHash = createHash('md5').update(newContents).digest('hex');
+
+        if (newContentsHash !== existingContentsHash) {
+            if (!existsCache[localeFileName]) {
+                mkdirpSync(opts.messagesDir);
             }
+            writeFileSync(localeFileName, newContents);
+            existsCache[localeFileName] = true;
+            contentsCache[localeFileName] = {
+                contents: newContents,
+                md5: newContentsHash,
+            };
         }
     }
 
@@ -455,7 +468,7 @@ export default function ({types: t}) {
 
             file.metadata['react-intl'] = {messages: descriptors};
 
-            if (opts.messagesDir && descriptors.length > 0) {
+            if (descriptors.length > 0) {
                 const generate = generators[opts.format || FORMAT_JSON_MULTI_FILE];
 
                 if (!generate) {
