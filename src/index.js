@@ -145,10 +145,12 @@ export default function ({types: t}) {
             const existing = messages.get(id);
 
             if (description !== existing.description ||
-                (defaultMessage || id) !== existing.defaultMessage) {
+                defaultMessage !== existing.defaultMessage) {
                 throw path.buildCodeFrameError(
                     `[React Intl] Duplicate message id: "${id}", ` +
-                    'but the `description` and/or `defaultMessage` are different.'
+                    'but the `description` and/or `defaultMessage` are different: ' +
+                    `existing description [${existing.description}], new description [${description}], ` +
+                    `existing default message [${existing.defaultMessage}], new default message [${defaultMessage}].`
                 );
             }
         }
@@ -172,7 +174,7 @@ export default function ({types: t}) {
             };
         }
 
-        messages.set(id, {id, description, defaultMessage: defaultMessage || id, ...loc});
+        messages.set(id, {id, description, defaultMessage: defaultMessage, ...loc});
     }
 
     function referencesImport(path, mod, importedNames) {
@@ -225,7 +227,7 @@ export default function ({types: t}) {
         let messages = {};
 
         for (let descriptor of descriptors) {
-            messages[descriptor.id] = descriptor.defaultMessage;
+            messages[descriptor.id] = descriptor.defaultMessage || descriptor.id;
         }
 
         const localeFileName = opts.messagesFile;
@@ -405,7 +407,7 @@ export default function ({types: t}) {
             if (existingTargetNode) {
                 targetNode.text(existingTargetNode.text().trim());
             } else {
-                targetNode.text(descriptor.defaultMessage);
+                targetNode.text(descriptor.defaultMessage || descriptor.id);
             }
 
             if (descriptor.description) {
