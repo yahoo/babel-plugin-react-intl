@@ -185,7 +185,8 @@ export default function ({types: t}) {
 
         post(file) {
             const {opts} = this;
-            const {basename, filename} = file.opts;
+            const {filename} = file.opts;
+            const basename = p.basename(filename, p.extname(filename));
 
             const messages = file.get(MESSAGES);
             const descriptors = [...messages.values()];
