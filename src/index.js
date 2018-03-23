@@ -115,12 +115,18 @@ export default function ({types: t}) {
         return descriptor;
     }
 
-    function storeMessage({id, description, defaultMessage}, path, state) {
+    function storeMessage({id, description, defaultMessage = ''}, path, state) {
         const {file, opts} = state;
 
-        if (!(id && defaultMessage)) {
+        if (!id) {
             throw path.buildCodeFrameError(
-                '[React Intl] Message Descriptors require an `id` and `defaultMessage`.'
+                '[React Intl] Message Descriptors require an `id`.'
+            );
+        }
+
+        if (!defaultMessage && !opts.optionalDefaultMessages) {
+            throw path.buildCodeFrameError(
+                '[React Intl] Message Descriptors require `defaultMessage`.'
             );
         }
 
@@ -251,7 +257,7 @@ export default function ({types: t}) {
                     // `<FormattedMessage id={dynamicId} />`, because it will be
                     // skipped here and extracted elsewhere. The descriptor will
                     // be extracted only if a `defaultMessage` prop exists.
-                    if (descriptor.defaultMessage) {
+                    if (descriptor.defaultMessage || opts.optionalDefaultMessages) {
                         // Evaluate the Message Descriptor values in a JSX
                         // context, then store it.
                         descriptor = evaluateMessageDescriptor(descriptor, {
