@@ -16,6 +16,8 @@ const skipTests = [
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
+    'keepDescriptions',
+    'removeDefaultMessage',
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -81,6 +83,23 @@ describe('options', () => {
         try {
             transform(path.join(fixtureDir, 'actual.js'), {
                 enforceDescriptions: true,
+            }, {
+                multiplePasses: true,
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+    });
+
+    it('keep descriptions when plugin is applied more than once with keepDescriptions=true', () => {
+        const fixtureDir = path.join(fixturesDir, 'keepDescriptions');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                enforceDescriptions: true,
+                keepDescriptions: true,
             }, {
                 multiplePasses: true,
             });

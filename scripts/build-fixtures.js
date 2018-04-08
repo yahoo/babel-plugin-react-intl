@@ -16,6 +16,13 @@ const fixtures = [
     ['moduleSourceName', {
         moduleSourceName: 'react-i18n',
     }],
+    ['keepDescriptions', {
+        enforceDescriptions: true,
+        keepDescriptions: true,
+    }],
+    ['removeDefaultMessage', {
+        removeDefaultMessage: true,
+    }],
 ];
 
 fixtures.forEach((fixture) => {
