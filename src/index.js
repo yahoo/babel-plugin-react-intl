@@ -28,6 +28,14 @@ export default function ({types: t}) {
         return opts.moduleSourceName || 'react-intl';
     }
 
+    function getShouldRemoveDefaultMessage(opts) {
+        return !!opts.removeDefaultMessage;
+    }
+
+    function getkeepDescriptions(opts) {
+        return !!opts.keepDescriptions;
+    }
+
     function evaluatePath(path) {
         const evaluated = path.evaluate();
         if (evaluated.confident) {
@@ -221,6 +229,9 @@ export default function ({types: t}) {
 
                 const {file, opts} = state;
                 const moduleSourceName = getModuleSourceName(opts);
+                const shouldRemoveDefaultMessage = getShouldRemoveDefaultMessage(opts);
+                const keepDescriptions = getkeepDescriptions(opts);
+
                 const name = path.get('name');
 
                 if (name.referencesImport(moduleSourceName, 'FormattedPlural')) {
@@ -261,11 +272,13 @@ export default function ({types: t}) {
                         storeMessage(descriptor, path, state);
 
                         // Remove description since it's not used at runtime.
-                        attributes.some((attr) => {
-                            const ketPath = attr.get('name');
-                            if (getMessageDescriptorKey(ketPath) === 'description') {
+                        attributes.forEach((attr) => {
+                            const keyPath = attr.get('name');
+                            if (!keepDescriptions && getMessageDescriptorKey(keyPath) === 'description') {
                                 attr.remove();
-                                return true;
+                            }
+                            if (shouldRemoveDefaultMessage && getMessageDescriptorKey(keyPath) === 'defaultMessage') {
+                                attr.remove();
                             }
                         });
 
@@ -277,6 +290,8 @@ export default function ({types: t}) {
 
             CallExpression(path, state) {
                 const moduleSourceName = getModuleSourceName(state.opts);
+                const shouldRemoveDefaultMessage = getShouldRemoveDefaultMessage(state.opts);
+                const keepDescriptions = getkeepDescriptions(state.opts);
                 const callee = path.get('callee');
 
                 function assertObjectExpression(node) {
@@ -310,17 +325,32 @@ export default function ({types: t}) {
                     descriptor = evaluateMessageDescriptor(descriptor);
                     storeMessage(descriptor, messageObj, state);
 
-                    // Remove description since it's not used at runtime.
-                    messageObj.replaceWith(t.objectExpression([
+                    const replacementObject = [
                         t.objectProperty(
                             t.stringLiteral('id'),
                             t.stringLiteral(descriptor.id)
                         ),
-                        t.objectProperty(
-                            t.stringLiteral('defaultMessage'),
-                            t.stringLiteral(descriptor.defaultMessage)
-                        ),
-                    ]));
+                    ];
+
+                    if (keepDescriptions) {
+                        replacementObject.push(
+                            t.objectProperty(
+                                t.stringLiteral('description'),
+                                t.stringLiteral(descriptor.description)
+                            )
+                        );
+                    }
+
+                    if (!shouldRemoveDefaultMessage) {
+                        replacementObject.push(
+                            t.objectProperty(
+                                t.stringLiteral('defaultMessage'),
+                                t.stringLiteral(descriptor.defaultMessage)
+                            )    
+                        );    
+                    }    
+                
+                    messageObj.replaceWith(t.objectExpression(replacementObject));
 
                     // Tag the AST node so we don't try to extract it twice.
                     tagAsExtracted(messageObj);
