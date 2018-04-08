@@ -42,6 +42,10 @@ If a message descriptor has a `description`, it'll be removed from the source af
 
 - **`moduleSourceName`**: The ES6 module source name of the React Intl package. Defaults to: `"react-intl"`, but can be changed to another name/path to React Intl.
 
+- **`keepDescriptions`**: When `true`, then `description` will not be removed from transformed code. Defaults to: `false`.
+
+- **`removeDefaultMessage`**: When `true`, then `defaultMessage` will be removed from transformed code. Defaults to: `false`.
+
 ### Via Node API
 
 The extract message descriptors are available via the `metadata` property on the object returned from Babel's `transform()` API:
