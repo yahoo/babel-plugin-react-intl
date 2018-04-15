@@ -287,6 +287,7 @@ export default function ({types: t}) {
 
             CallExpression(path, state) {
                 const moduleSourceName = getModuleSourceName(state.opts);
+                const {extractInjectionApi} = state.opts;
                 const callee = path.get('callee');
 
                 function assertObjectExpression(node) {
@@ -346,6 +347,15 @@ export default function ({types: t}) {
                     messagesObj.get('properties')
                         .map((prop) => prop.get('value'))
                         .forEach(processMessageObject);
+                } else if (
+                    extractInjectionApi &&
+                    t.isMemberExpression(callee.node, { computed: false }) &&
+                    t.isIdentifier(callee.node.object, { name: 'intl' }) &&
+                    t.isIdentifier(callee.node.property, { name: 'formatMessage' })
+                ) {
+                    // parse intl.formatMessage calls
+                    const messagesObj = path.get('arguments')[0];
+                    processMessageObject(messagesObj);
                 }
             },
         },

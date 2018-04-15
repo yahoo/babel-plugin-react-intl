@@ -13,6 +13,7 @@ const skipTests = [
     '.DS_Store',
     'enforceDescriptions',
     'extractSourceLocation',
+    'extractInjectionApi',
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
@@ -166,6 +167,25 @@ describe('options', () => {
         try {
             transform(path.join(fixtureDir, 'actual.js'), {
                 extractSourceLocation: true,
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        // Check message output
+        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
+        assert.equal(trim(actualMessages), trim(expectedMessages));
+    });
+
+    it('respects extractInjectionApi', () => {
+        const fixtureDir = path.join(fixturesDir, 'extractInjectionApi');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                extractInjectionApi: true,
             });
             assert(true);
         } catch (e) {
