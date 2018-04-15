@@ -16,6 +16,7 @@ const skipTests = [
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
+    'enforceDefaultMessages',
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -67,6 +68,34 @@ describe('options', () => {
         try {
             transform(path.join(fixtureDir, 'actual.js'), {
                 enforceDescriptions: false,
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+    });
+
+    it('enforces defaultMessages when enforceDefaultMessages=true', () => {
+        const fixtureDir = path.join(fixturesDir, 'enforceDefaultMessages');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                enforceDefaultMessages: true,
+            });
+            assert(false);
+        } catch (e) {
+            assert(e);
+            assert(/Message Descriptors require a `defaultMessage`/.test(e.message));
+        }
+    });
+
+    it('allows no defaultMessage when enforceDefaultMessages=false', () => {
+        const fixtureDir = path.join(fixturesDir, 'enforceDefaultMessages');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                enforceDefaultMessages: false,
             });
             assert(true);
         } catch (e) {
