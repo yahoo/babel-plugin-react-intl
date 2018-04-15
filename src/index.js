@@ -227,6 +227,7 @@ export default function ({types: t}) {
 
                 const {file, opts} = state;
                 const moduleSourceName = getModuleSourceName(opts);
+                const componentNames = opts.componentNames || COMPONENT_NAMES;
                 const name = path.get('name');
 
                 if (name.referencesImport(moduleSourceName, 'FormattedPlural')) {
@@ -239,7 +240,7 @@ export default function ({types: t}) {
                     return;
                 }
 
-                if (referencesImport(name, moduleSourceName, COMPONENT_NAMES)) {
+                if (referencesImport(name, moduleSourceName, componentNames)) {
                     const attributes = path.get('attributes')
                         .filter((attr) => attr.isJSXAttribute());
 

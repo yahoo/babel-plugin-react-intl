@@ -1,0 +1,11 @@
+[
+  {
+    "id": "foo.bar.baz",
+    "description": "The default message.",
+    "defaultMessage": "Hello World!"
+  },
+  {
+    "id": "foo.bar",
+    "defaultMessage": "Foo bar!"
+  }
+]
