@@ -19,6 +19,7 @@ const skipTests = [
     'removeDescriptions',
     'enforceDefaultMessages',
     'componentNames',
+    'messagesStructureCategory',
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -197,6 +198,39 @@ describe('options', () => {
         const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
         const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
         assert.equal(trim(actualMessages), trim(expectedMessages));
+    });
+
+    it('exports messages by category, when messagesStructure=category', () => {
+        const fixtureDir = path.join(fixturesDir, 'messagesStructureCategory');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                messagesStructure: 'category',
+                messagesDir: fixtureDir,
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        try {
+            transform(path.join(fixtureDir, 'actual2.js'), {
+                messagesStructure: 'category',
+                messagesDir: fixtureDir,
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        ['default', 'foo'].forEach((category) => {
+            // Check message output
+            const expectedMessages = fs.readFileSync(path.join(fixtureDir, `expected-${category}.json`));
+            const actualMessages = fs.readFileSync(path.join(fixtureDir, `${category}.json`));
+            assert.equal(trim(actualMessages), trim(expectedMessages));
+        });
     });
 });
 

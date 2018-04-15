@@ -1,0 +1,10 @@
+{
+  "foo.bar.baz": {
+    "id": "foo.bar.baz",
+    "defaultMessage": "foo bar baz"
+  },
+  "foo.aar": {
+    "id": "foo.aar",
+    "defaultMessage": "foo aar"
+  }
+}

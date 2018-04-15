@@ -1,0 +1,10 @@
+{
+  "hello_world": {
+    "id": "hello_world",
+    "defaultMessage": "Hello World!"
+  },
+  "lorem_ipsum": {
+    "id": "lorem_ipsum",
+    "defaultMessage": "Lorem ipsum"
+  }
+}

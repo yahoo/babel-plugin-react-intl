@@ -5,7 +5,7 @@
  */
 
 import * as p from 'path';
-import {writeFileSync} from 'fs';
+import {writeFileSync, readFileSync} from 'fs';
 import {sync as mkdirpSync} from 'mkdirp';
 import printICUMessage from './print-icu-message';
 
@@ -199,23 +199,56 @@ export default function ({types: t}) {
             file.metadata['react-intl'] = {messages: descriptors};
 
             if (opts.messagesDir && descriptors.length > 0) {
-                // Make sure the relative path is "absolute" before
-                // joining it with the `messagesDir`.
-                const relativePath = p.join(
-                    p.sep,
-                    p.relative(process.cwd(), filename)
-                );
+                if (opts.messagesStructure === 'category') {
+                    const descriptorsMap = descriptors.reduce((map, descriptor) => {
+                        const parts = descriptor.id.split('.');
+                        const category = parts.length > 1 ? parts[0] : 'default';
 
-                const messagesFilename = p.join(
-                    opts.messagesDir,
-                    p.dirname(relativePath),
-                    basename + '.json'
-                );
+                        if (!map[category]) {
+                            map[category] = {};
+                        }
 
-                const messagesFile = JSON.stringify(descriptors, null, 2);
+                        map[category][descriptor.id] = descriptor;
 
-                mkdirpSync(p.dirname(messagesFilename));
-                writeFileSync(messagesFilename, messagesFile);
+                        return map;
+                    }, {});
+
+                    Object.entries(descriptorsMap).forEach(([category, descriptors]) => {
+                        const messagesFilename = p.join(opts.messagesDir, category + '.json');
+
+                        mkdirpSync(p.dirname(messagesFilename));
+
+                        try {
+                            descriptors = {
+                                ...JSON.parse(readFileSync(messagesFilename, 'utf8')),
+                                ...descriptors,
+                            };
+                        } catch (err) {
+                          // creating fresh file
+                        }
+
+                        const messagesFile = JSON.stringify(descriptors, null, 2);
+                        writeFileSync(messagesFilename, messagesFile);
+                    });
+                } else {
+                    // Make sure the relative path is "absolute" before
+                    // joining it with the `messagesDir`.
+                    const relativePath = p.join(
+                        p.sep,
+                        p.relative(process.cwd(), filename)
+                    );
+
+                    const messagesFilename = p.join(
+                        opts.messagesDir,
+                        p.dirname(relativePath),
+                        basename + '.json'
+                    );
+
+                    const messagesFile = JSON.stringify(descriptors, null, 2);
+
+                    mkdirpSync(p.dirname(messagesFilename));
+                    writeFileSync(messagesFilename, messagesFile);
+                }
             }
         },
 
