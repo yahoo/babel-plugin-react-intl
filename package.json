@@ -10,7 +10,7 @@
   "main": "lib/index.js",
   "author": "Eric Ferraiuolo <edf@ericf.me>",
   "dependencies": {
-    "babel-runtime": "^6.2.0",
+    "@babel/runtime": "^7.0.0-rc.2",
     "intl-messageformat-parser": "^1.2.0",
     "mkdirp": "^0.5.1"
   },
@@ -27,7 +27,8 @@
     "eslint-plugin-react": "^6.1.2",
     "mocha": "^3.0.2",
     "power-assert": "^1.4.1",
-    "rimraf": "^2.4.3"
+    "rimraf": "^2.4.3",
+    "upath": "^1.1.0"
   },
   "scripts": {
     "lint": "eslint src/",
