@@ -10,7 +10,7 @@
   "main": "lib/index.js",
   "author": "Eric Ferraiuolo <edf@ericf.me>",
   "dependencies": {
-    "babel-runtime": "^6.2.0",
+    "@babel/runtime": "^7.0.0-rc.2",
     "intl-messageformat-parser": "^1.2.0",
     "mkdirp": "^0.5.1"
   },
