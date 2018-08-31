@@ -23,7 +23,7 @@
     "@babel/preset-env": "7.0.0",
     "@babel/preset-react": "7.0.0",
     "@babel/register": "7.0.0",
-    "babel-plugin-espower": "^2.3.1",
+    "babel-plugin-espower": "^3.0.0",
     "cross-env": "^3.1.4",
     "eslint": "^3.14.1",
     "eslint-plugin-react": "^6.1.2",
