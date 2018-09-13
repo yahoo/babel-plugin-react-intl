@@ -1,8 +1,15 @@
 # babel-plugin-react-intl
 
 Extracts string messages for translation from modules that use [React Intl][].
+## Dependencies
 
-_**Note:** This Babel plugin works with React Intl v2.x, and **1.x of this plugin works with Babel 5, 2.x works with Babel 6**._
+### React Intl
+This Babel plugin works with React Intl v2.x
+  
+### Babel
+- **3.x** of this plugin works with Babel 7
+- **2.x** works with Babel 6
+- **1.x** works with Babel 5
 
 ## Installation
 
