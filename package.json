@@ -12,7 +12,8 @@
   "dependencies": {
     "@babel/runtime": "^7.0.0",
     "intl-messageformat-parser": "^1.2.0",
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "upath": "^1.1.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.0.0",
