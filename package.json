@@ -12,7 +12,8 @@
   "dependencies": {
     "@babel/runtime": "^7.0.0",
     "intl-messageformat-parser": "^1.2.0",
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "postinstall-build": "^3.0.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.0.0",
@@ -38,6 +39,7 @@
     "test": "cross-env NODE_ENV=test mocha --compilers js:@babel/register",
     "build": "babel src/ --out-dir lib/",
     "build:fixtures": "babel-node ./scripts/build-fixtures.js",
+    "postinstall": "postinstall-build lib",
     "preversion": "npm run lint && npm run clean && npm run build",
     "prepublish": "npm run clean && npm run build"
   },
