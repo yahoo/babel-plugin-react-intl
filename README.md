@@ -49,6 +49,8 @@ If a message descriptor has a `description`, it'll be removed from the source af
 
 - **`moduleSourceName`**: The ES6 module source name of the React Intl package. Defaults to: `"react-intl"`, but can be changed to another name/path to React Intl.
 
+- **`combineFile`**: The combined messages file name e.g `strings.json`. By setting this option, it will combine all the messages to one json object file with key value pairs structure.
+
 ### Via Node API
 
 The extract message descriptors are available via the `metadata` property on the object returned from Babel's `transform()` API:

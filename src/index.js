@@ -23,6 +23,11 @@ const DESCRIPTOR_PROPS = new Set(['id', 'description', 'defaultMessage']);
 const EXTRACTED = Symbol('ReactIntlExtracted');
 const MESSAGES  = Symbol('ReactIntlMessages');
 
+// combined default messages object
+const combinedMessages = {};
+// reversed combined default messages temp object, to detect duplicate default messages
+const rcdm = {};
+
 export default function ({types: t}) {
     function getModuleSourceName(opts) {
         return opts.moduleSourceName || 'react-intl';
@@ -176,6 +181,64 @@ export default function ({types: t}) {
         return !!path.node[EXTRACTED];
     }
 
+    function sortObjByKeys(obj) {
+        return Object.keys(obj).sort().reduce((acc, curKey) => {
+            acc[curKey] = obj[curKey];
+            return acc;
+        }, {});
+    }
+
+    function combineMessages(descriptors, file) {
+        descriptors.forEach((item) => {
+            /*
+                Check if there is duplicate default message with same id,
+                then skip checks, and go to next item in the array.
+                example:
+                    { "id": "BACK", "defaultMessage": "Back" }
+                    { "id": "BACK", "defaultMessage": "Back" }
+            */
+            if (combinedMessages[item.id] === item.defaultMessage) {
+                return combinedMessages;
+            }
+
+            /*
+                Check if there is duplicate id with different default messages,
+                then throw error.
+                example:
+                    { "id":"READ_MORE", "defaultMessage":"Read more" }
+                    { "id":"READ_MORE", "defaultMessage":"Read more info" }
+            */
+            if (combinedMessages[item.id] && combinedMessages[item.id] !== item.defaultMessage) {
+                throw file.path.buildCodeFrameError(
+                    '[React Intl] Duplicate id with different `defaultMessage`s!\n' + 
+                    JSON.stringify({id: item.id,  defaultMessage: combinedMessages[item.id]}) + '\n'+ 
+                    JSON.stringify({id: item.id,  defaultMessage: item.defaultMessage})
+                );
+            }
+
+            // Check if there is duplicate default message with different ids
+            /*
+                example:
+                    { "id":"INDEX", "defaultMessage":"home page" }
+                    { "id":"HOME",  "defaultMessage":"home page" }
+            */
+            if (rcdm[item.defaultMessage]) {
+                throw file.path.buildCodeFrameError(
+                    '[React Intl] Duplicate `defaultMessage` with different `id`s!\n' +
+                    JSON.stringify({id: rcdm[item.defaultMessage], defaultMessage: item.defaultMessage}) + '\n' +
+                    JSON.stringify({id: item.id,  defaultMessage: item.defaultMessage}));
+            }
+
+            // set default message to combined messages object
+            combinedMessages[item.id] = item.defaultMessage;
+            // set id to temp default messages object
+            rcdm[item.defaultMessage] = item.id;
+        }, {});
+
+        // sort combined messages objects by ids
+        return sortObjByKeys(combinedMessages);
+    }
+
     return {
         pre(file) {
             if (!file.has(MESSAGES)) {
@@ -186,27 +249,35 @@ export default function ({types: t}) {
         post(file) {
             const {opts} = this;
             const {filename} = file.opts;
-
             const basename = p.basename(filename, p.extname(filename));
             const messages = file.get(MESSAGES);
             const descriptors = [...messages.values()];
             file.metadata['react-intl'] = {messages: descriptors};
 
             if (opts.messagesDir && descriptors.length > 0) {
-                // Make sure the relative path is "absolute" before
-                // joining it with the `messagesDir`.
-                const relativePath = p.join(
-                    p.sep,
-                    p.relative(process.cwd(), filename)
-                );
+                let messagesFilename;
+                let messagesFile;
 
-                const messagesFilename = p.join(
-                    opts.messagesDir,
-                    p.dirname(relativePath),
-                    basename + '.json'
-                );
+                // check combine messages option
+                if (opts.combineFile) {
+                    messagesFilename = p.join(opts.messagesDir, opts.combineFile);
+                    messagesFile = JSON.stringify(combineMessages(descriptors, file), null, 2);
+                } else {
+                    // Make sure the relative path is "absolute" before
+                    // joining it with the `messagesDir`.
+                    const relativePath = p.join(
+                        p.sep,
+                        p.relative(process.cwd(), filename)
+                    );
 
-                const messagesFile = JSON.stringify(descriptors, null, 2);
+                    messagesFilename = p.join(
+                        opts.messagesDir,
+                        p.dirname(relativePath),
+                        basename + '.json'
+                    );
+
+                    messagesFile = JSON.stringify(descriptors, null, 2);
+                }
 
                 mkdirpSync(p.dirname(messagesFilename));
                 writeFileSync(messagesFilename, messagesFile);

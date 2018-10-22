@@ -17,6 +17,7 @@ const skipTests = [
     'moduleSourceName',
     'icuSyntax',
     'removeDescriptions',
+    'combineMessages'
 ];
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -129,6 +130,27 @@ describe('options', () => {
         const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
         assert.equal(trim(actualMessages), trim(expectedMessages));
     });
+
+    it('combineMessages', () => {
+        const fixtureDir = path.join(fixturesDir, 'combineMessages');
+
+        try {
+            transform(path.join(fixtureDir, 'actual.js'), {
+                combineMessages: true,
+                combineFile: './test/fixtures/combineMessages/actual.json'
+            });
+            assert(true);
+        } catch (e) {
+            console.error(e);
+            assert(false);
+        }
+
+        // Check message output
+        const expectedMessages = fs.readFileSync(path.join(fixtureDir, 'expected.json'));
+        const actualMessages = fs.readFileSync(path.join(fixtureDir, 'actual.json'));
+        assert.equal(trim(actualMessages), trim(expectedMessages));
+    });
+
 });
 
 describe('errors', () => {
@@ -144,6 +166,37 @@ describe('errors', () => {
             assert(/Expected .* but "\." found/.test(e.message));
         }
     });
+
+   it('Duplicate duplicate id with different default messages', () => {
+        const fixtureDir = path.join(fixturesDir, 'combineMessages/errors');
+
+        try {
+            transform(path.join(fixtureDir, 'dupIdWithDiffMsg.js'),{
+                combineMessages: true,
+                combineFile: './test/fixtures/combineMessages/errors/actual.json'
+            });
+            assert(false);
+        } catch (e) {
+            assert(e);
+            assert(/Duplicate id with different `defaultMessage`s!/.test(e.message));
+        }
+    });
+
+    it('Duplicate default message with different ids error', () => {
+        const fixtureDir = path.join(fixturesDir, 'combineMessages/errors');
+
+        try {
+            transform(path.join(fixtureDir, 'dupMsgWithDiffIds.js'),{
+                combineMessages: true,
+                combineFile: './test/fixtures/combineMessages/errors/actual.json'
+            });
+            assert(false);
+        } catch (e) {
+            assert(e);
+            assert(/Duplicate `defaultMessage` with different `id`s!/.test(e.message));
+        }
+    });
+
 });
 
 
