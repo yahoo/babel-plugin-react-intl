@@ -271,7 +271,7 @@ export default function ({types: t}) {
                             if (getMessageDescriptorKey(ketPath) === 'description') {
                                 attr.remove();
                             } else if (opts.overrideIdFn && getMessageDescriptorKey(ketPath) === 'id') {
-                                attr.get('value').replaceWith(t.stringLiteral(descriptor.id))
+                                attr.get('value').replaceWith(t.stringLiteral(descriptor.id));
                             }
                         });
 
